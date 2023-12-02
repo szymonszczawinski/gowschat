@@ -2,6 +2,7 @@ package main
 
 import (
 	"context"
+	"gowschat/server"
 	"log"
 	"net/http"
 	"os"
@@ -19,13 +20,14 @@ func init() {
 }
 
 func main() {
-	chatServer := NewChatServer()
+	log.Println("Hello Chat Server")
+	chatServer := server.NewChatServer()
 	// go chatServer.run()
 	router := gin.Default()
 
-	router.GET("/", home)
+	router.GET("/", server.Home)
 	router.GET("/ws", func(ctx *gin.Context) {
-		serveWs(chatServer, ctx)
+		server.ServeWs(chatServer, ctx)
 	})
 
 	server := http.Server{
