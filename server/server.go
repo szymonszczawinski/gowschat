@@ -24,7 +24,8 @@ func ServeWs(chatServer *ChatServer, c *gin.Context) {
 	}
 	peer := NewChatPeer(chatServer, conn)
 	chatServer.AddPeer(peer)
-	peer.readMessages()
+	go peer.readMessages()
+	go peer.writeMessages()
 }
 
 func Home(c *gin.Context) {

@@ -1,16 +1,26 @@
 package server
 
-import "sync"
+import (
+	"errors"
+	"log"
+	"sync"
+)
+
+var ErrEventNotSupported = errors.New("this event type is not supported")
 
 type ChatServer struct {
-	peers   map[*ChatPeer]bool
-	muPeers sync.RWMutex
+	handlers map[string]EventHandler
+	peers    map[*ChatPeer]bool
+	muPeers  sync.RWMutex
 }
 
 func NewChatServer() *ChatServer {
-	return &ChatServer{
-		peers: map[*ChatPeer]bool{},
+	server := &ChatServer{
+		peers:    map[*ChatPeer]bool{},
+		handlers: map[string]EventHandler{},
 	}
+	server.setupHandlers()
+	return server
 }
 
 func (chat *ChatServer) AddPeer(peer *ChatPeer) {
@@ -29,4 +39,22 @@ func (chat *ChatServer) RemovePeer(peer *ChatPeer) {
 }
 
 func (chat *ChatServer) Run() {
+}
+
+func (chat *ChatServer) setupHandlers() {
+	chat.handlers[EventSendMessage] = func(event Event, p *ChatPeer) error {
+		log.Println(event)
+		return nil
+	}
+}
+
+func (chat *ChatServer) routeEvent(e Event, p *ChatPeer) error {
+	if handler, ok := chat.handlers[e.GetType()]; ok {
+		if err := handler(e, p); err != nil {
+			return err
+		}
+		return nil
+	} else {
+		return ErrEventNotSupported
+	}
 }
