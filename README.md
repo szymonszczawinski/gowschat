@@ -11,6 +11,10 @@ Chat application. Server and client. WebSocket communication. JSON and Proto pay
 - handle message
 - parse/serialize JSON message
 - send message to all peers
+- list rooms
+- create room
+- join room
+- get room details
 ## To be done
 - client
 - Proto format messages
