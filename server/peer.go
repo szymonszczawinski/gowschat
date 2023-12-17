@@ -32,7 +32,7 @@ const (
 type ChatPeer struct {
 	server   *ChatServer
 	con      *websocket.Conn
-	outgoing chan OutMessage
+	outgoing chan Message
 	peerId   string
 	rooms    map[*ChatRoom]bool
 	peerType PeerType
@@ -43,7 +43,7 @@ func NewChatPeer(chatServer *ChatServer, con *websocket.Conn) *ChatPeer {
 	return &ChatPeer{
 		server:   chatServer,
 		con:      con,
-		outgoing: make(chan OutMessage),
+		outgoing: make(chan Message),
 		peerId:   uuid.NewString(),
 		peerType: PeerTypeUnset,
 		rooms:    map[*ChatRoom]bool{},
@@ -82,7 +82,7 @@ func (p *ChatPeer) readMessages() {
 		}
 		event, err := parseEvent(messageType, payload)
 		if err != nil {
-			log.Println("Error handeling Message: ", err)
+			log.Println("Error parsing Message: ", err)
 		} else {
 			// Route the Event
 			if err := p.server.routeEvent(event, p); err != nil {
@@ -108,7 +108,7 @@ func (p *ChatPeer) writeMessages() {
 				return
 			}
 
-			event, err := createOutEvent(message, p.peerType)
+			event, err := createEvent(message, p.peerType)
 			if err != nil {
 				log.Println(err)
 			}
