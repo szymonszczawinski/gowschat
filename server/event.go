@@ -1,7 +1,6 @@
 package server
 
 import (
-	"encoding/json"
 	"errors"
 	"fmt"
 	"log"
@@ -25,6 +24,7 @@ const (
 	EventLeaveRoomAck       = "leave_room_ack"
 	EventGetRoomList        = "list_rooms"
 	EventRoomList           = "list_rooms_resp"
+	EventError              = "error"
 	EventUnknown            = "unknown"
 )
 
@@ -33,6 +33,7 @@ type (
 		GetType() string
 		GetPayload() Message
 		Serialize() ([]byte, error)
+		ParseMessage() (Message, error)
 	}
 )
 type EventHandler func(event Event, p *ChatPeer) error
@@ -40,13 +41,7 @@ type EventHandler func(event Event, p *ChatPeer) error
 func parseEvent(messageType int, payload []byte) (Event, error) {
 	switch messageType {
 	case websocket.TextMessage:
-
-		var event EventJson
-		if err := json.Unmarshal(payload, &event); err != nil {
-			log.Printf("error marshalling message: %v", err)
-			return nil, err
-		}
-		return event, nil
+		return parseJsonEvent(payload)
 	case websocket.BinaryMessage:
 		return nil, ErrUnsupportedMessageType
 	default:
@@ -55,14 +50,14 @@ func parseEvent(messageType int, payload []byte) (Event, error) {
 }
 
 func createEvent(m Message, peerType PeerType) (Event, error) {
-	messagedata, err := serializeMessage(m, peerType)
+	messagedata, err := m.Serialize()
 	if err != nil {
 		log.Println(err)
 		return nil, err
 	}
 
 	if peerType == PeerTypeJson {
-		return EventJson{
+		return &EventJson{
 			EventType: m.GetType(),
 			Payload:   messagedata,
 		}, nil
@@ -74,21 +69,15 @@ func createEvent(m Message, peerType PeerType) (Event, error) {
 }
 
 func HandlerMessageIn(event Event, p *ChatPeer) error {
-	if message, err := parseMessage(event, p.peerType); err != nil {
+	if message, err := event.ParseMessage(); err != nil {
 		log.Println("ERROR", err)
 	} else {
-		log.Println("message handled", message)
-		if outMessage, err := createMessageOut(message); err != nil {
-			log.Println("out message not created", err)
-		} else {
-			// Broadcast to all other Clients
-			for peer := range p.server.peers {
-				// FIXME:: re-enable same peer check
-				// if p.peerId != peer.peerId {
-				if peer.status == PeerStatusOnline {
-					peer.outgoing <- outMessage
-				}
-				// }
+		// Broadcast to all other Clients
+		for peer := range p.server.peers {
+			// FIXME:: re-enable same peer check
+			// if p.peerId != peer.peerId {
+			if peer.status == PeerStatusOnline {
+				peer.outgoing <- message
 			}
 		}
 	}
@@ -96,7 +85,7 @@ func HandlerMessageIn(event Event, p *ChatPeer) error {
 }
 
 func HandlerCreateRoom(e Event, p *ChatPeer) error {
-	if message, err := parseMessage(e, p.peerType); err != nil {
+	if message, err := e.ParseMessage(); err != nil {
 		log.Println("ERROR", err)
 	} else {
 		if createRoomMessage, ok := message.(MessageCreateRoom); ok {
@@ -113,16 +102,21 @@ func HandlerCreateRoom(e Event, p *ChatPeer) error {
 }
 
 func HandlerJoinRoom(e Event, p *ChatPeer) error {
-	if message, err := parseMessage(e, p.peerType); err != nil {
+	if message, err := e.ParseMessage(); err != nil {
 		log.Println("ERROR", err)
 	} else {
 		if joinRoomMessage, ok := message.(MessageJoinRoom); ok {
-			if room, err := p.server.joinRoom(joinRoomMessage.GetRoomName(), p); err != nil {
+			room, err := p.server.joinRoom(joinRoomMessage.GetRoomName(), p)
+			if err != nil {
 				return err
-			} else {
-				message := createMessageRoom(room)
-				p.outgoing <- message
 			}
+			message, err := createMessageRoom(room, p.peerType)
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+			p.outgoing <- message
+
 		} else {
 			return ErrUnsupportedMessageType
 		}
@@ -132,16 +126,21 @@ func HandlerJoinRoom(e Event, p *ChatPeer) error {
 }
 
 func HandlerGetRoom(e Event, p *ChatPeer) error {
-	if message, err := parseMessage(e, p.peerType); err != nil {
+	if message, err := e.ParseMessage(); err != nil {
 		log.Println("ERROR", err)
 	} else {
 		if getRoomMessage, ok := message.(MessageGetRoom); ok {
-			if room, err := p.server.getRoom(getRoomMessage.GetRoomName()); err != nil {
+			room, err := p.server.getRoom(getRoomMessage.GetRoomName())
+			if err != nil {
 				return err
-			} else {
-				message := createMessageRoom(room)
-				p.outgoing <- message
 			}
+			message, err := createMessageRoom(room, p.peerType)
+			if err != nil {
+				log.Println(err)
+				return err
+			}
+			p.outgoing <- message
+
 		} else {
 			return ErrUnsupportedMessageType
 		}
@@ -156,7 +155,11 @@ func HandlerLeaveRoom(e Event, p *ChatPeer) error {
 }
 
 func HandlerRoomList(e Event, p *ChatPeer) error {
-	message := createMessageRoomList(p)
+	message, err := createMessageRoomList(p)
+	if err != nil {
+		log.Println(err)
+		return err
+	}
 	p.outgoing <- message
 	return nil
 }

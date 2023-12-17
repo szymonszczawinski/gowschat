@@ -80,6 +80,7 @@ func (p *ChatPeer) readMessages() {
 			p.status = PeerStatusOffline
 			break // Break the loop to close conn & Cleanup
 		}
+
 		event, err := parseEvent(messageType, payload)
 		if err != nil {
 			log.Println("Error parsing Message: ", err)
@@ -107,8 +108,11 @@ func (p *ChatPeer) writeMessages() {
 				}
 				return
 			}
-
-			event, err := createEvent(message, p.peerType)
+			outMessage, err := createMessageOut(message, p.peerType)
+			if err != nil {
+				log.Println(err)
+			}
+			event, err := createEvent(outMessage, p.peerType)
 			if err != nil {
 				log.Println(err)
 			}

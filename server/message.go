@@ -1,9 +1,7 @@
 package server
 
 import (
-	"encoding/json"
 	"errors"
-	"fmt"
 )
 
 var (
@@ -34,51 +32,51 @@ type (
 	}
 )
 
-func parseMessage(e Event, peerType PeerType) (Message, error) {
-	switch peerType {
-	case PeerTypeJson:
-		return parseJsonMessage(e.GetType(), e.GetPayload())
+func createMessageOut(m Message, peerType PeerType) (Message, error) {
+	switch v := m.(type) {
+	case MessageIn:
+		switch peerType {
+		case PeerTypeJson:
+			return v.GenerateMessageOut(), nil
+		default:
+			return nil, ErrUnsupporterPeerType
+		}
 	default:
-		return nil, ErrUnsupportedMessageType
+		return m, nil
+
 	}
 }
 
-func serializeMessage(out Message, peerType PeerType) ([]byte, error) {
-	if peerType == PeerTypeJson {
-		return json.Marshal(out)
-	}
-	if peerType == PeerTypeProto {
-		return nil, errors.Join(ErrUnsupporterPeerType, fmt.Errorf("%v", peerType))
-	}
-	return nil, ErrUnsupporterPeerType
-}
-
-func createMessageOut(m Message) (Message, error) {
-	if inMessage, ok := m.(MessageIn); ok {
-		return inMessage.GenerateMessageOut(), nil
-	}
-	return nil, ErrUnsupportedMessageType
-}
-
-func createMessageRoomList(p *ChatPeer) Message {
+func createMessageRoomList(p *ChatPeer) (Message, error) {
 	rooms := []string{}
 	for room := range p.server.rooms {
 		rooms = append(rooms, room.name)
 	}
-	message := &MessageRoomListJson{
-		Rooms: rooms,
+	switch p.peerType {
+	case PeerTypeJson:
+
+		message := &MessageRoomListJson{
+			Rooms: rooms,
+		}
+		return message, nil
+	default:
+		return nil, ErrUnsupporterPeerType
 	}
-	return message
 }
 
-func createMessageRoom(r *ChatRoom) Message {
+func createMessageRoom(r *ChatRoom, peerType PeerType) (Message, error) {
 	peers := []string{}
 	for peer := range r.peers {
 		peers = append(peers, peer.peerId)
 	}
-	message := &MessageRoomJson{
-		RoomName: r.name,
-		Peers:    peers,
+	switch peerType {
+	case PeerTypeJson:
+		message := &MessageRoomJson{
+			RoomName: r.name,
+			Peers:    peers,
+		}
+		return message, nil
+	default:
+		return nil, ErrUnsupporterPeerType
 	}
-	return message
 }

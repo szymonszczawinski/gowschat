@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"log"
 	"time"
 )
 
@@ -151,9 +152,18 @@ func (m MessageRoomJson) GetType() string {
 	return EventJoinRoomAck
 }
 
-func parseJsonMessage(eventType string, payload Message) (Message, error) {
-	jsonMessage, _ := payload.Serialize()
-	switch eventType {
+func parseJsonEvent(payload []byte) (Event, error) {
+	var event *EventJson
+	if err := json.Unmarshal(payload, &event); err != nil {
+		log.Printf("error marshalling message: %v", err)
+		return nil, err
+	}
+	return event, nil
+}
+
+func (e *EventJson) ParseMessage() (Message, error) {
+	jsonMessage, _ := e.GetPayload().Serialize()
+	switch e.GetType() {
 	case EventInMessage:
 		var message *MessageInJson
 		if err := json.Unmarshal(jsonMessage, &message); err != nil {
