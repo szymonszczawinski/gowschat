@@ -42,10 +42,7 @@ func (chat *ChatServer) Run() {
 }
 
 func (chat *ChatServer) setupHandlers() {
-	chat.handlers[EventSendMessage] = func(event Event, p *ChatPeer) error {
-		log.Println(event)
-		return nil
-	}
+	chat.handlers[EventSendMessage] = SendMessageHandler
 }
 
 func (chat *ChatServer) routeEvent(e Event, p *ChatPeer) error {
@@ -57,4 +54,20 @@ func (chat *ChatServer) routeEvent(e Event, p *ChatPeer) error {
 	} else {
 		return ErrEventNotSupported
 	}
+}
+
+func SendMessageHandler(event Event, p *ChatPeer) error {
+	if message, err := parseSendMessage(event); err != nil {
+		log.Println("ERROR", err)
+	} else {
+		log.Println("message handled", message)
+		outMessage := message.GenerateOutMessage()
+		// Broadcast to all other Clients
+		for peer := range p.server.peers {
+			// if p.peerId != peer.peerId {
+			peer.outgoing <- outMessage
+			// }
+		}
+	}
+	return nil
 }
