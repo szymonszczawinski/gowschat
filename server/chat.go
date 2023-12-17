@@ -65,8 +65,11 @@ func InMessageHandler(event Event, p *ChatPeer) error {
 		outMessage := message.GenerateOutMessage()
 		// Broadcast to all other Clients
 		for peer := range p.server.peers {
+			// FIXME:: re-enable same peer check
 			// if p.peerId != peer.peerId {
-			peer.outgoing <- outMessage
+			if peer.status == PeerStatusOnline {
+				peer.outgoing <- outMessage
+			}
 			// }
 		}
 	}

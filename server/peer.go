@@ -15,12 +15,18 @@ var (
 	ErrUnsupporterPeerType = errors.New("unsupported peer type")
 )
 
-type PeerType string
+type (
+	PeerStatus string
+	PeerType   string
+)
 
 const (
 	PeerTypeJson  = "json"
 	PeerTypeProto = "proto"
 	PeerTypeUnset = "unset"
+
+	PeerStatusOnline  = "online"
+	PeerStatusOffline = "offline"
 )
 
 type ChatPeer struct {
@@ -30,6 +36,7 @@ type ChatPeer struct {
 	peerId   string
 	rooms    map[*ChatRoom]bool
 	peerType PeerType
+	status   PeerStatus
 }
 
 func NewChatPeer(chatServer *ChatServer, con *websocket.Conn) *ChatPeer {
@@ -40,6 +47,7 @@ func NewChatPeer(chatServer *ChatServer, con *websocket.Conn) *ChatPeer {
 		peerId:   uuid.NewString(),
 		peerType: PeerTypeUnset,
 		rooms:    map[*ChatRoom]bool{},
+		status:   PeerStatusOnline,
 	}
 }
 
@@ -69,6 +77,7 @@ func (p *ChatPeer) readMessages() {
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
 				log.Printf("error reading message: %v", err)
 			}
+			p.status = PeerStatusOffline
 			break // Break the loop to close conn & Cleanup
 		}
 		event, err := parseEvent(messageType, payload)
