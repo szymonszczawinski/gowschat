@@ -120,7 +120,6 @@ func (p *ChatPeer) writeMessages() {
 			if err := p.writeMessage(data); err != nil {
 				log.Println(err)
 			}
-			log.Println("message sent")
 		case <-ticker.C:
 			log.Println("ping")
 			// Send the Ping

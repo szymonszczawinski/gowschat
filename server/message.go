@@ -17,10 +17,19 @@ type (
 		GetType() string
 		Serialize() ([]byte, error)
 	}
-	InMessage interface {
-		GenerateOutMessage() Message
+	MessageIn interface {
+		GenerateMessageOut() Message
 	}
-	CreateRoomMessage interface {
+	MessageCreateRoom interface {
+		GetRoomName() string
+	}
+	MessageJoinRoom interface {
+		GetRoomName() string
+	}
+	MessageLeaveRoom interface {
+		GetRoomName() string
+	}
+	MessageGetRoom interface {
 		GetRoomName() string
 	}
 )
@@ -44,20 +53,32 @@ func serializeMessage(out Message, peerType PeerType) ([]byte, error) {
 	return nil, ErrUnsupporterPeerType
 }
 
-func createOutMessage(m Message) (Message, error) {
-	if inMessage, ok := m.(InMessage); ok {
-		return inMessage.GenerateOutMessage(), nil
+func createMessageOut(m Message) (Message, error) {
+	if inMessage, ok := m.(MessageIn); ok {
+		return inMessage.GenerateMessageOut(), nil
 	}
 	return nil, ErrUnsupportedMessageType
 }
 
-func createRoomListMessage(p *ChatPeer) Message {
+func createMessageRoomList(p *ChatPeer) Message {
 	rooms := []string{}
 	for room := range p.server.rooms {
 		rooms = append(rooms, room.name)
 	}
-	message := &ListRoomsMessageRespJson{
+	message := &MessageRoomListJson{
 		Rooms: rooms,
+	}
+	return message
+}
+
+func createMessageRoom(r *ChatRoom) Message {
+	peers := []string{}
+	for peer := range r.peers {
+		peers = append(peers, peer.peerId)
+	}
+	message := &MessageRoomJson{
+		RoomName: r.name,
+		Peers:    peers,
 	}
 	return message
 }

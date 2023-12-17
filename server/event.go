@@ -18,12 +18,13 @@ const (
 	EventInitialPeerMessage = "initial_message"
 	EventCreateRoom         = "create_room"
 	EventCreateRoomAck      = "create_room_ack"
+	EventGetRoom            = "get_room"
 	EventJoinRoom           = "join_room"
 	EventJoinRoomAck        = "join_room_ack"
 	EventLeaveRoom          = "leave_room"
 	EventLeaveRoomAck       = "leave_room_ack"
-	EventListRooms          = "list_rooms"
-	EventListRoomsResp      = "list_rooms_resp"
+	EventGetRoomList        = "list_rooms"
+	EventRoomList           = "list_rooms_resp"
 	EventUnknown            = "unknown"
 )
 
@@ -70,4 +71,92 @@ func createEvent(m Message, peerType PeerType) (Event, error) {
 		return nil, errors.Join(ErrUnsupporterPeerType, fmt.Errorf("%v", peerType))
 	}
 	return nil, ErrUnsupporterPeerType
+}
+
+func HandlerMessageIn(event Event, p *ChatPeer) error {
+	if message, err := parseMessage(event, p.peerType); err != nil {
+		log.Println("ERROR", err)
+	} else {
+		log.Println("message handled", message)
+		if outMessage, err := createMessageOut(message); err != nil {
+			log.Println("out message not created", err)
+		} else {
+			// Broadcast to all other Clients
+			for peer := range p.server.peers {
+				// FIXME:: re-enable same peer check
+				// if p.peerId != peer.peerId {
+				if peer.status == PeerStatusOnline {
+					peer.outgoing <- outMessage
+				}
+				// }
+			}
+		}
+	}
+	return nil
+}
+
+func HandlerCreateRoom(e Event, p *ChatPeer) error {
+	if message, err := parseMessage(e, p.peerType); err != nil {
+		log.Println("ERROR", err)
+	} else {
+		if createRoomMessage, ok := message.(MessageCreateRoom); ok {
+			if err := p.server.createRoom(createRoomMessage.GetRoomName(), p); err != nil {
+				return err
+			} else {
+				log.Println("room created", createRoomMessage.GetRoomName())
+			}
+		} else {
+			return ErrUnsupportedMessageType
+		}
+	}
+	return nil
+}
+
+func HandlerJoinRoom(e Event, p *ChatPeer) error {
+	if message, err := parseMessage(e, p.peerType); err != nil {
+		log.Println("ERROR", err)
+	} else {
+		if joinRoomMessage, ok := message.(MessageJoinRoom); ok {
+			if room, err := p.server.joinRoom(joinRoomMessage.GetRoomName(), p); err != nil {
+				return err
+			} else {
+				message := createMessageRoom(room)
+				p.outgoing <- message
+			}
+		} else {
+			return ErrUnsupportedMessageType
+		}
+	}
+
+	return nil
+}
+
+func HandlerGetRoom(e Event, p *ChatPeer) error {
+	if message, err := parseMessage(e, p.peerType); err != nil {
+		log.Println("ERROR", err)
+	} else {
+		if getRoomMessage, ok := message.(MessageGetRoom); ok {
+			if room, err := p.server.getRoom(getRoomMessage.GetRoomName()); err != nil {
+				return err
+			} else {
+				message := createMessageRoom(room)
+				p.outgoing <- message
+			}
+		} else {
+			return ErrUnsupportedMessageType
+		}
+	}
+
+	return nil
+}
+
+func HandlerLeaveRoom(e Event, p *ChatPeer) error {
+	// TODO: todo
+	return nil
+}
+
+func HandlerRoomList(e Event, p *ChatPeer) error {
+	message := createMessageRoomList(p)
+	p.outgoing <- message
+	return nil
 }

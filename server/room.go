@@ -1,6 +1,11 @@
 package server
 
-import "sync"
+import (
+	"errors"
+	"sync"
+)
+
+var ErrRoomAlreadyJoined = errors.New("room already joined")
 
 type ChatRoom struct {
 	peers   map[*ChatPeer]bool
@@ -18,4 +23,15 @@ func NewChatRoom(name string, creator *ChatPeer) *ChatRoom {
 	room.peers[creator] = true
 
 	return room
+}
+
+func (r *ChatRoom) join(p *ChatPeer) error {
+	r.muPeers.Lock()
+	defer r.muPeers.Unlock()
+	_, exist := r.peers[p]
+	if exist {
+		return ErrRoomAlreadyJoined
+	}
+	r.peers[p] = true
+	return nil
 }

@@ -2,13 +2,13 @@ package server
 
 import (
 	"errors"
-	"log"
 	"sync"
 )
 
 var (
 	ErrEventNotSupported = errors.New("this event type is not supported")
 	ErrRoomExist         = errors.New("room witch such name exist")
+	ErrRoomNotExist      = errors.New("room does not exist")
 )
 
 type ChatServer struct {
@@ -57,13 +57,40 @@ func (chat *ChatServer) createRoom(name string, creator *ChatPeer) error {
 	return nil
 }
 
+func (chat *ChatServer) joinRoom(name string, joiner *ChatPeer) (*ChatRoom, error) {
+	chat.muRooms.Lock()
+	defer chat.muRooms.Unlock()
+	for room := range chat.rooms {
+		if room.name == name {
+			if err := room.join(joiner); err != nil {
+				return nil, err
+			}
+			return room, nil
+		}
+	}
+	return nil, ErrRoomNotExist
+}
+
+func (chat *ChatServer) getRoom(name string) (*ChatRoom, error) {
+	chat.muRooms.Lock()
+	defer chat.muRooms.Unlock()
+	for room := range chat.rooms {
+		if room.name == name {
+			return room, nil
+		}
+	}
+	return nil, ErrRoomNotExist
+}
+
 func (chat *ChatServer) Run() {
 }
 
 func (chat *ChatServer) setupHandlers() {
-	chat.handlers[EventInMessage] = InMessageHandler
-	chat.handlers[EventListRooms] = ListRoomsHandler
-	chat.handlers[EventCreateRoom] = CreateRoomHandler
+	chat.handlers[EventInMessage] = HandlerMessageIn
+	chat.handlers[EventGetRoomList] = HandlerRoomList
+	chat.handlers[EventCreateRoom] = HandlerCreateRoom
+	chat.handlers[EventJoinRoom] = HandlerJoinRoom
+	chat.handlers[EventGetRoom] = HandlerGetRoom
 }
 
 func (chat *ChatServer) routeEvent(e Event, p *ChatPeer) error {
@@ -75,59 +102,4 @@ func (chat *ChatServer) routeEvent(e Event, p *ChatPeer) error {
 	} else {
 		return ErrEventNotSupported
 	}
-}
-
-func InMessageHandler(event Event, p *ChatPeer) error {
-	if message, err := parseMessage(event, p.peerType); err != nil {
-		log.Println("ERROR", err)
-	} else {
-		log.Println("message handled", message)
-		if outMessage, err := createOutMessage(message); err != nil {
-			log.Println("out message not created", err)
-		} else {
-			// Broadcast to all other Clients
-			for peer := range p.server.peers {
-				// FIXME:: re-enable same peer check
-				// if p.peerId != peer.peerId {
-				if peer.status == PeerStatusOnline {
-					peer.outgoing <- outMessage
-				}
-				// }
-			}
-		}
-	}
-	return nil
-}
-
-func CreateRoomHandler(e Event, p *ChatPeer) error {
-	if message, err := parseMessage(e, p.peerType); err != nil {
-		log.Println("ERROR", err)
-	} else {
-		if createRoomMessage, ok := message.(CreateRoomMessage); ok {
-			if err := p.server.createRoom(createRoomMessage.GetRoomName(), p); err != nil {
-				return err
-			} else {
-				log.Println("room created", createRoomMessage.GetRoomName())
-			}
-		} else {
-			return ErrUnsupportedMessageType
-		}
-	}
-	return nil
-}
-
-func JoinRoomHandler(e Event, p *ChatPeer) error {
-	// TODO: todo
-	return nil
-}
-
-func LeaveRoomHandler(e Event, p *ChatPeer) error {
-	// TODO: todo
-	return nil
-}
-
-func ListRoomsHandler(e Event, p *ChatPeer) error {
-	message := createRoomListMessage(p)
-	p.outgoing <- message
-	return nil
 }
