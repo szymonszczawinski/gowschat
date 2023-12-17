@@ -10,12 +10,15 @@ import (
 )
 
 const (
-	// EventSendMessage is the event name for new chat messages sent
-	EventSendMessage = "send_message"
-	// EventNewMessage is a response to send_message
-	EventNewMessage = "new_message"
+	// EventInMessage is the event name for new chat messages sent
+	EventInMessage = "in_message"
+	// EventOutMessage is a response to send_message
+	EventOutMessage = "out_message"
 	// EventInitialPeerMessage is a initial message sent to peer after connect
 	EventInitialPeerMessage = "initial_message"
+	EventCreateRoom         = "create_room"
+	EventJoinRoom           = "join_room"
+	EventLeaveRoom          = "leave_room"
 )
 
 var (
@@ -34,7 +37,7 @@ type (
 	Message interface {
 		Serialize() ([]byte, error)
 	}
-	SendMessage interface {
+	InMessage interface {
 		GetMessage() string
 		GetFrom() string
 		GenerateOutMessage() OutMessage
@@ -42,7 +45,6 @@ type (
 
 	OutMessage interface {
 		Serialize() ([]byte, error)
-		Wrap() Event
 	}
 
 	InitialMessage interface {
@@ -69,23 +71,13 @@ func parseEvent(messageType int, payload []byte) (Event, error) {
 	}
 }
 
-func parseSendMessage(e Event) (SendMessage, error) {
-	switch v := e.(type) {
-	case EventJson:
-		return parseJsonMessage(EventJson(v))
+func parseMessage(e Event, peerType PeerType) (InMessage, error) {
+	switch peerType {
+	case PeerTypeJson:
+		return parseJsonMessage(e.GetType(), e.GetPayload())
 	default:
 		return nil, ErrUnsupportedMessageType
 	}
-}
-
-func generateInitialEvent(p ChatPeer) Event {
-	message := InitialMessageJson{PeerId: p.peerId}
-	jsonMessage, _ := message.Serialize()
-	event := EventJson{
-		EventType: EventInitialPeerMessage,
-		Payload:   jsonMessage,
-	}
-	return event
 }
 
 func serializeOutMessage(out OutMessage, peerType PeerType) ([]byte, error) {
@@ -98,11 +90,17 @@ func serializeOutMessage(out OutMessage, peerType PeerType) ([]byte, error) {
 	return nil, ErrUnsupporterPeerType
 }
 
-func wrapOutMessage(data []byte, peerType PeerType) (Event, error) {
+func createOutEvent(out OutMessage, peerType PeerType) (Event, error) {
+	messagedata, err := serializeOutMessage(out, peerType)
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
 	if peerType == PeerTypeJson {
 		return EventJson{
-			EventType: EventNewMessage,
-			Payload:   data,
+			EventType: EventOutMessage,
+			Payload:   messagedata,
 		}, nil
 	}
 	if peerType == PeerTypeProto {

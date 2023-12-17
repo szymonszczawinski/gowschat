@@ -46,23 +46,23 @@ func (e EventJson) Serialize() ([]byte, error) {
 	return json.Marshal(e)
 }
 
-type SendMessageJson struct {
+type InMessageJson struct {
 	Message string `json:"message"`
 	From    string `json:"from"`
 }
 
-func (m SendMessageJson) GetMessage() string {
+func (m InMessageJson) GetMessage() string {
 	return m.Message
 }
 
-func (m SendMessageJson) GetFrom() string {
+func (m InMessageJson) GetFrom() string {
 	return m.From
 }
 
-func (m SendMessageJson) GenerateOutMessage() OutMessage {
+func (m InMessageJson) GenerateOutMessage() OutMessage {
 	return OutMessageJson{
 		Sent: time.Now(),
-		SendMessageJson: SendMessageJson{
+		InMessageJson: InMessageJson{
 			Message: m.GetMessage(),
 			From:    m.GetFrom(),
 		},
@@ -71,19 +71,11 @@ func (m SendMessageJson) GenerateOutMessage() OutMessage {
 
 type OutMessageJson struct {
 	Sent time.Time `json:"sent"`
-	SendMessageJson
+	InMessageJson
 }
 
 func (m OutMessageJson) Serialize() ([]byte, error) {
 	return json.Marshal(m)
-}
-
-func (m OutMessageJson) Wrap() Event {
-	data, _ := m.Serialize()
-	return EventJson{
-		EventType: EventNewMessage,
-		Payload:   data,
-	}
 }
 
 type InitialMessageJson struct {
@@ -94,11 +86,11 @@ func (m InitialMessageJson) Serialize() ([]byte, error) {
 	return json.Marshal(m)
 }
 
-func parseJsonMessage(e EventJson) (SendMessage, error) {
-	switch e.GetType() {
-	case EventSendMessage:
-		var message SendMessageJson
-		jsonMessage, _ := e.GetPayload().Serialize()
+func parseJsonMessage(eventType string, payload Message) (InMessage, error) {
+	switch eventType {
+	case EventInMessage:
+		var message InMessageJson
+		jsonMessage, _ := payload.Serialize()
 		if err := json.Unmarshal(jsonMessage, &message); err != nil {
 			return nil, errors.Join(ErrBadJsonPayload, fmt.Errorf("%v", err))
 		}

@@ -28,6 +28,7 @@ type ChatPeer struct {
 	con      *websocket.Conn
 	outgoing chan OutMessage
 	peerId   string
+	rooms    map[*ChatRoom]bool
 	peerType PeerType
 }
 
@@ -38,6 +39,7 @@ func NewChatPeer(chatServer *ChatServer, con *websocket.Conn) *ChatPeer {
 		outgoing: make(chan OutMessage),
 		peerId:   uuid.NewString(),
 		peerType: PeerTypeUnset,
+		rooms:    map[*ChatRoom]bool{},
 	}
 }
 
@@ -97,12 +99,7 @@ func (p *ChatPeer) writeMessages() {
 				return
 			}
 
-			messagedata, err := serializeOutMessage(message, p.peerType)
-			if err != nil {
-				log.Println(err)
-			}
-
-			event, err := wrapOutMessage(messagedata, p.peerType)
+			event, err := createOutEvent(message, p.peerType)
 			if err != nil {
 				log.Println(err)
 			}
@@ -131,19 +128,6 @@ func (p *ChatPeer) pongHandler(pongMsg string) error {
 	// Current time + Pong Wait time
 	log.Println("pong", pongMsg)
 	return p.con.SetReadDeadline(time.Now().Add(pongWait))
-}
-
-func (p *ChatPeer) sendInitalMessage() {
-	event := generateInitialEvent(*p)
-	data, err := event.Serialize()
-	if err != nil {
-		log.Println(err)
-		return // closes the connection, should we really
-	}
-	if err := p.con.WriteMessage(websocket.TextMessage, data); err != nil {
-		log.Println(err)
-	}
-	log.Println("message sent")
 }
 
 func (p *ChatPeer) initPeerType(mesageType int) {

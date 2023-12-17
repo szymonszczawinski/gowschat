@@ -11,6 +11,7 @@ var ErrEventNotSupported = errors.New("this event type is not supported")
 type ChatServer struct {
 	handlers map[string]EventHandler
 	peers    map[*ChatPeer]bool
+	rooms    map[*ChatRoom]bool
 	muPeers  sync.RWMutex
 }
 
@@ -42,7 +43,7 @@ func (chat *ChatServer) Run() {
 }
 
 func (chat *ChatServer) setupHandlers() {
-	chat.handlers[EventSendMessage] = SendMessageHandler
+	chat.handlers[EventInMessage] = InMessageHandler
 }
 
 func (chat *ChatServer) routeEvent(e Event, p *ChatPeer) error {
@@ -56,8 +57,8 @@ func (chat *ChatServer) routeEvent(e Event, p *ChatPeer) error {
 	}
 }
 
-func SendMessageHandler(event Event, p *ChatPeer) error {
-	if message, err := parseSendMessage(event); err != nil {
+func InMessageHandler(event Event, p *ChatPeer) error {
+	if message, err := parseMessage(event, p.peerType); err != nil {
 		log.Println("ERROR", err)
 	} else {
 		log.Println("message handled", message)
@@ -69,5 +70,20 @@ func SendMessageHandler(event Event, p *ChatPeer) error {
 			// }
 		}
 	}
+	return nil
+}
+
+func CreateRoomHandler(e Event, p *ChatPeer) error {
+	// TODO: todo
+	return nil
+}
+
+func JoinRoomHandler(e Event, p *ChatPeer) error {
+	// TODO: todo
+	return nil
+}
+
+func LeaveRoomHandler(e Event, p *ChatPeer) error {
+	// TODO: todo
 	return nil
 }
