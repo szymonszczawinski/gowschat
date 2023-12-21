@@ -80,3 +80,15 @@ func createMessageRoom(r *ChatRoom, peerType PeerType) (Message, error) {
 		return nil, ErrUnsupporterPeerType
 	}
 }
+
+func createMessageError(appError error, peerType PeerType) (Message, error) {
+	switch peerType {
+	case PeerTypeJson:
+		message := &MessageErrorJson{
+			Error: appError.Error(),
+		}
+		return message, nil
+	default:
+		return nil, ErrUnsupporterPeerType
+	}
+}

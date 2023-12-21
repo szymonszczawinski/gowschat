@@ -6,9 +6,9 @@ import (
 )
 
 func TestChatServer_createRoom(t *testing.T) {
-	roomA := &ChatRoom{name: "roomA"}
-	// roomB := &ChatRoom{name: "roomB"}
 	creator := &ChatPeer{peerId: "creator"}
+	roomA := &ChatRoom{name: "roomA", creator: creator, peers: map[*ChatPeer]bool{creator: true}} // roomB := &ChatRoom{name: "roomB"}
+	roomB := &ChatRoom{name: "roomB", creator: creator, peers: map[*ChatPeer]bool{creator: true}} // roomB := &ChatRoom{name: "roomB"}
 	type fields struct {
 		rooms map[*ChatRoom]bool
 	}
@@ -20,19 +20,24 @@ func TestChatServer_createRoom(t *testing.T) {
 		name    string
 		fields  fields
 		args    args
+		want    *ChatRoom
 		wantErr bool
 	}{
-		{"can add new room", fields{rooms: map[*ChatRoom]bool{}}, args{name: "roomA", creator: creator}, false},
-		{"can not add same room", fields{rooms: map[*ChatRoom]bool{roomA: true}}, args{name: "roomA", creator: creator}, true},
-		{"can add different room", fields{rooms: map[*ChatRoom]bool{roomA: true}}, args{name: "roomB", creator: creator}, false},
+		{"can add new room", fields{rooms: map[*ChatRoom]bool{}}, args{name: "roomA", creator: creator}, roomA, false},
+		{"can not add same room", fields{rooms: map[*ChatRoom]bool{roomA: true}}, args{name: "roomA", creator: creator}, nil, true},
+		{"can add different room", fields{rooms: map[*ChatRoom]bool{roomA: true}}, args{name: "roomB", creator: creator}, roomB, false},
 	}
 	for _, tt := range tests {
 		t.Run(tt.name, func(t *testing.T) {
 			chat := &ChatServer{
 				rooms: tt.fields.rooms,
 			}
-			if err := chat.createRoom(tt.args.name, tt.args.creator); (err != nil) != tt.wantErr {
+			got, err := chat.createRoom(tt.args.name, tt.args.creator)
+			if (err != nil) != tt.wantErr {
 				t.Errorf("ChatServer.createRoom() error = %v, wantErr %v", err, tt.wantErr)
+			}
+			if !reflect.DeepEqual(got, tt.want) {
+				t.Errorf("ChatServer.createRoom() = %v, want %v", got, tt.want)
 			}
 		})
 	}

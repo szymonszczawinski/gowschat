@@ -51,14 +51,7 @@ func (e EventJson) Serialize() ([]byte, error) {
 	return json.Marshal(e)
 }
 
-type MessageBaseJson struct{}
-
-func (m *MessageBaseJson) Serialize() ([]byte, error) {
-	return json.Marshal(m)
-}
-
 type MessageInJson struct {
-	MessageBaseJson
 	Message string `json:"message"`
 	From    string `json:"from"`
 }
@@ -85,6 +78,10 @@ func (m MessageInJson) GenerateOutMessage() Message {
 	}
 }
 
+func (m *MessageInJson) Serialize() ([]byte, error) {
+	return json.Marshal(m)
+}
+
 type MessageOutJson struct {
 	Sent time.Time `json:"sent"`
 	MessageInJson
@@ -94,8 +91,11 @@ func (m MessageOutJson) GetType() string {
 	return EventOutMessage
 }
 
+func (m *MessageOutJson) Serialize() ([]byte, error) {
+	return json.Marshal(m)
+}
+
 type MessageRoomListJson struct {
-	MessageBaseJson
 	Rooms []string `json:"rooms"`
 }
 
@@ -103,8 +103,11 @@ func (m MessageRoomListJson) GetType() string {
 	return EventRoomList
 }
 
+func (m *MessageRoomListJson) Serialize() ([]byte, error) {
+	return json.Marshal(m)
+}
+
 type MessageCreateRoomJson struct {
-	MessageBaseJson
 	RoomName string `json:"roomName"`
 }
 
@@ -116,8 +119,11 @@ func (m MessageCreateRoomJson) GetRoomName() string {
 	return m.RoomName
 }
 
+func (m *MessageCreateRoomJson) Serialize() ([]byte, error) {
+	return json.Marshal(m)
+}
+
 type MessageJoinRoomJson struct {
-	MessageBaseJson
 	RoomName string `json:"roomName"`
 }
 
@@ -129,8 +135,11 @@ func (m MessageJoinRoomJson) GetRoomName() string {
 	return m.RoomName
 }
 
+func (m *MessageJoinRoomJson) Serialize() ([]byte, error) {
+	return json.Marshal(m)
+}
+
 type MessageGetRoomJson struct {
-	MessageBaseJson
 	RoomName string `json:"roomName"`
 }
 
@@ -142,14 +151,33 @@ func (m MessageGetRoomJson) GetRoomName() string {
 	return m.RoomName
 }
 
+func (m *MessageGetRoomJson) Serialize() ([]byte, error) {
+	return json.Marshal(m)
+}
+
 type MessageRoomJson struct {
-	MessageBaseJson
 	RoomName string   `json:"roomName"`
 	Peers    []string `json:"peers"`
 }
 
 func (m MessageRoomJson) GetType() string {
-	return EventJoinRoomAck
+	return EventRoom
+}
+
+func (m *MessageRoomJson) Serialize() ([]byte, error) {
+	return json.Marshal(m)
+}
+
+type MessageErrorJson struct {
+	Error string `json:"error"`
+}
+
+func (m MessageErrorJson) GetType() string {
+	return EventError
+}
+
+func (m *MessageErrorJson) Serialize() ([]byte, error) {
+	return json.Marshal(m)
 }
 
 func parseJsonEvent(payload []byte) (Event, error) {

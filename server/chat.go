@@ -2,6 +2,7 @@ package server
 
 import (
 	"errors"
+	"log"
 	"sync"
 )
 
@@ -44,17 +45,18 @@ func (chat *ChatServer) RemovePeer(peer *ChatPeer) {
 	}
 }
 
-func (chat *ChatServer) createRoom(name string, creator *ChatPeer) error {
+func (chat *ChatServer) createRoom(name string, creator *ChatPeer) (*ChatRoom, error) {
 	chat.muRooms.Lock()
 	defer chat.muRooms.Unlock()
 	for room := range chat.rooms {
 		if room.name == name {
-			return ErrRoomExist
+			return nil, ErrRoomExist
 		}
 	}
 	newRoom := NewChatRoom(name, creator)
 	chat.rooms[newRoom] = true
-	return nil
+	log.Printf("room created %v\n", name)
+	return newRoom, nil
 }
 
 func (chat *ChatServer) joinRoom(name string, joiner *ChatPeer) (*ChatRoom, error) {
