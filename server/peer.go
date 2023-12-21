@@ -111,14 +111,17 @@ func (p *ChatPeer) writeMessages() {
 			outMessage, err := createMessageOut(message, p.peerType)
 			if err != nil {
 				log.Println(err)
+				continue
 			}
 			event, err := createEvent(outMessage, p.peerType)
 			if err != nil {
 				log.Println(err)
+				continue
 			}
 			data, err := event.Serialize()
 			if err != nil {
 				log.Println(err)
+				continue
 			}
 
 			if err := p.writeMessage(data); err != nil {
@@ -171,4 +174,14 @@ func (p *ChatPeer) readMessage() (int, []byte, error) {
 
 func (p *ChatPeer) close() error {
 	return p.con.WriteMessage(websocket.CloseMessage, nil)
+}
+
+func (p *ChatPeer) writeError(err error) error {
+	if p.peerType == PeerTypeJson {
+		return p.con.WriteMessage(websocket.TextMessage, []byte(err.Error()))
+	}
+	if p.peerType == PeerTypeProto {
+		return p.con.WriteMessage(websocket.BinaryMessage, []byte(err.Error()))
+	}
+	return ErrUnsupporterPeerType
 }

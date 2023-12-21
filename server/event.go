@@ -50,7 +50,6 @@ func parseEvent(messageType int, payload []byte) (Event, error) {
 }
 
 func createEvent(m Message, peerType PeerType) (Event, error) {
-	log.Println("createEvent", m, peerType)
 	messagedata, err := m.Serialize()
 	if err != nil {
 		log.Println(err)
@@ -152,7 +151,6 @@ func HandlerGetRoom(e Event, p *ChatPeer) error {
 			} else {
 				message, err := createMessageRoom(room, p.peerType)
 				if err != nil {
-					log.Println(err)
 					return err
 				}
 				p.outgoing <- message
