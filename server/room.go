@@ -1,11 +1,8 @@
 package server
 
 import (
-	"errors"
 	"sync"
 )
-
-var ErrRoomAlreadyJoined = errors.New("room already joined")
 
 type ChatRoom struct {
 	peers   map[*ChatPeer]bool

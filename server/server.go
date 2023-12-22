@@ -19,7 +19,7 @@ func ServeWs(chatServer *ChatServer, c *gin.Context) {
 	// Begin by upgrading the HTTP request
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
-		log.Println("ERROR:", err)
+		log.Println("ERROR ::", err)
 		return
 	}
 	peer := NewChatPeer(chatServer, conn)

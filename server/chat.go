@@ -1,15 +1,8 @@
 package server
 
 import (
-	"errors"
 	"log"
 	"sync"
-)
-
-var (
-	ErrEventNotSupported = errors.New("this event type is not supported")
-	ErrRoomExist         = errors.New("room witch such name exist")
-	ErrRoomNotExist      = errors.New("room does not exist")
 )
 
 type ChatServer struct {
@@ -98,7 +91,7 @@ func (chat *ChatServer) setupHandlers() {
 func (chat *ChatServer) routeEvent(e Event, p *ChatPeer) error {
 	if handler, ok := chat.handlers[e.GetType()]; ok {
 		if err := handler(e, p); err != nil {
-			return err
+			HanlerError(err, e, p)
 		}
 		return nil
 	} else {

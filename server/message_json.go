@@ -4,7 +4,6 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
-	"log"
 	"time"
 )
 
@@ -43,7 +42,7 @@ func (e EventJson) GetType() string {
 	return e.EventType
 }
 
-func (e EventJson) GetPayload() Message {
+func (e EventJson) GetPayload() MessageSerializable {
 	return e.Payload
 }
 
@@ -68,7 +67,7 @@ func (m MessageInJson) GetType() string {
 	return EventInMessage
 }
 
-func (m MessageInJson) GenerateOutMessage() Message {
+func (m MessageInJson) GenerateMessageOut() MessageSerializable {
 	return &MessageOutJson{
 		Sent: time.Now(),
 		MessageInJson: MessageInJson{
@@ -76,10 +75,6 @@ func (m MessageInJson) GenerateOutMessage() Message {
 			From:    m.GetFrom(),
 		},
 	}
-}
-
-func (m *MessageInJson) Serialize() ([]byte, error) {
-	return json.Marshal(m)
 }
 
 type MessageOutJson struct {
@@ -119,10 +114,6 @@ func (m MessageCreateRoomJson) GetRoomName() string {
 	return m.RoomName
 }
 
-func (m *MessageCreateRoomJson) Serialize() ([]byte, error) {
-	return json.Marshal(m)
-}
-
 type MessageJoinRoomJson struct {
 	RoomName string `json:"roomName"`
 }
@@ -135,10 +126,6 @@ func (m MessageJoinRoomJson) GetRoomName() string {
 	return m.RoomName
 }
 
-func (m *MessageJoinRoomJson) Serialize() ([]byte, error) {
-	return json.Marshal(m)
-}
-
 type MessageGetRoomJson struct {
 	RoomName string `json:"roomName"`
 }
@@ -149,10 +136,6 @@ func (m MessageGetRoomJson) GetType() string {
 
 func (m MessageGetRoomJson) GetRoomName() string {
 	return m.RoomName
-}
-
-func (m *MessageGetRoomJson) Serialize() ([]byte, error) {
-	return json.Marshal(m)
 }
 
 type MessageRoomJson struct {
@@ -183,7 +166,6 @@ func (m *MessageErrorJson) Serialize() ([]byte, error) {
 func parseJsonEvent(payload []byte) (Event, error) {
 	var event *EventJson
 	if err := json.Unmarshal(payload, &event); err != nil {
-		log.Printf("error marshalling message: %v", err)
 		return nil, err
 	}
 	return event, nil

@@ -1,22 +1,15 @@
 package server
 
-import (
-	"errors"
-)
-
-var (
-	ErrUnsupportedMessageType = errors.New("unsupported message type")
-	ErrIncorrectJsonFormat    = errors.New("incorrect JSON format")
-	ErrBadJsonPayload         = errors.New("bad payload in request")
-)
-
 type (
 	Message interface {
 		GetType() string
+	}
+	MessageSerializable interface {
+		Message
 		Serialize() ([]byte, error)
 	}
 	MessageIn interface {
-		GenerateMessageOut() Message
+		GenerateMessageOut() MessageSerializable
 	}
 	MessageCreateRoom interface {
 		GetRoomName() string
@@ -32,7 +25,7 @@ type (
 	}
 )
 
-func createMessageOut(m Message, peerType PeerType) (Message, error) {
+func createMessageOut(m Message, peerType PeerType) (MessageSerializable, error) {
 	switch v := m.(type) {
 	case MessageIn:
 		switch peerType {
@@ -42,12 +35,12 @@ func createMessageOut(m Message, peerType PeerType) (Message, error) {
 			return nil, ErrUnsupporterPeerType
 		}
 	default:
-		return m, nil
+		return nil, ErrIncorrectMessageTypeIn
 
 	}
 }
 
-func createMessageRoomList(p *ChatPeer) (Message, error) {
+func createMessageRoomList(p *ChatPeer) (MessageSerializable, error) {
 	rooms := []string{}
 	for room := range p.server.rooms {
 		rooms = append(rooms, room.name)
@@ -64,7 +57,7 @@ func createMessageRoomList(p *ChatPeer) (Message, error) {
 	}
 }
 
-func createMessageRoom(r *ChatRoom, peerType PeerType) (Message, error) {
+func createMessageRoom(r *ChatRoom, peerType PeerType) (MessageSerializable, error) {
 	peers := []string{}
 	for peer := range r.peers {
 		peers = append(peers, peer.peerId)
@@ -81,7 +74,7 @@ func createMessageRoom(r *ChatRoom, peerType PeerType) (Message, error) {
 	}
 }
 
-func createMessageError(appError error, peerType PeerType) (Message, error) {
+func createMessageError(appError error, peerType PeerType) (MessageSerializable, error) {
 	switch peerType {
 	case PeerTypeJson:
 		message := &MessageErrorJson{

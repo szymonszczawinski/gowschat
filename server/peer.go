@@ -1,7 +1,6 @@
 package server
 
 import (
-	"errors"
 	"log"
 	"time"
 
@@ -10,9 +9,8 @@ import (
 )
 
 var (
-	pongWait               = 10 * time.Second
-	pingInterval           = (pongWait * 9) / 10
-	ErrUnsupporterPeerType = errors.New("unsupported peer type")
+	pongWait     = 10 * time.Second
+	pingInterval = (pongWait * 9) / 10
 )
 
 type (
@@ -32,7 +30,7 @@ const (
 type ChatPeer struct {
 	server   *ChatServer
 	con      *websocket.Conn
-	outgoing chan Message
+	outgoing chan MessageSerializable
 	peerId   string
 	rooms    map[*ChatRoom]bool
 	peerType PeerType
@@ -43,7 +41,7 @@ func NewChatPeer(chatServer *ChatServer, con *websocket.Conn) *ChatPeer {
 	return &ChatPeer{
 		server:   chatServer,
 		con:      con,
-		outgoing: make(chan Message),
+		outgoing: make(chan MessageSerializable),
 		peerId:   uuid.NewString(),
 		peerType: PeerTypeUnset,
 		rooms:    map[*ChatRoom]bool{},
@@ -59,7 +57,7 @@ func (p *ChatPeer) readMessages() {
 	// Configure Wait time for Pong response, use Current time + pongWait
 	// This has to be done here to set the first initial timer.
 	if err := p.con.SetReadDeadline(time.Now().Add(pongWait)); err != nil {
-		log.Println(err)
+		log.Println("ERROR :: SetReadDeadline:", err)
 		return
 	}
 	p.con.SetReadLimit(512)
@@ -75,7 +73,7 @@ func (p *ChatPeer) readMessages() {
 			// If Connection is closed, we will Recieve an error here
 			// We only want to log Strange errors, but not simple Disconnection
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("error reading message: %v", err)
+				log.Printf("ERROR :: reading message: %v", err)
 			}
 			p.status = PeerStatusOffline
 			break // Break the loop to close conn & Cleanup
@@ -83,11 +81,11 @@ func (p *ChatPeer) readMessages() {
 
 		event, err := parseEvent(messageType, payload)
 		if err != nil {
-			log.Println("Error parsing Message: ", err)
+			log.Println("ERROR :: parseEvent:", err)
 		} else {
 			// Route the Event
 			if err := p.server.routeEvent(event, p); err != nil {
-				log.Println("Error handeling Message: ", err)
+				log.Println("ERROR :: routeEvent", err)
 			}
 		}
 	}
@@ -101,37 +99,32 @@ func (p *ChatPeer) writeMessages() {
 	}()
 	for {
 		select {
-		case message, ok := <-p.outgoing:
+		case messageOut, ok := <-p.outgoing:
 			if !ok {
 				if err := p.close(); err != nil {
-					log.Println("connection closed", err)
+					log.Println("ERROR :: connection closed", err)
 				}
 				return
 			}
-			outMessage, err := createMessageOut(message, p.peerType)
+			event, err := createEvent(messageOut, p.peerType)
 			if err != nil {
-				log.Println(err)
-				continue
-			}
-			event, err := createEvent(outMessage, p.peerType)
-			if err != nil {
-				log.Println(err)
+				log.Println("ERROR :: createEvent:", err)
 				continue
 			}
 			data, err := event.Serialize()
 			if err != nil {
-				log.Println(err)
+				log.Println("ERROR :: Event.Serialize:", err)
 				continue
 			}
 
 			if err := p.writeMessage(data); err != nil {
-				log.Println(err)
+				log.Println("ERROR :: writeMessage:", err)
 			}
 		case <-ticker.C:
 			log.Println("ping")
 			// Send the Ping
 			if err := p.con.WriteMessage(websocket.PingMessage, []byte{}); err != nil {
-				log.Println("writemsg: ", err)
+				log.Println("ERROR :: PING", err)
 				return // return to break this goroutine triggeing cleanup
 			}
 		}
