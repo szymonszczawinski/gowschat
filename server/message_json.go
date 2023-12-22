@@ -3,11 +3,48 @@ package server
 import (
 	"encoding/json"
 	"errors"
-	"fmt"
 	"time"
 )
 
-type JsonPayload []byte
+type (
+	JsonPayload []byte
+
+	MessageInJson struct {
+		Message string `json:"message"`
+		From    string `json:"from"`
+	}
+
+	MessageOutJson struct {
+		Sent time.Time `json:"sent"`
+		MessageInJson
+	}
+
+	MessageErrorJson struct {
+		Error string `json:"error"`
+	}
+
+	MessageRoomJson struct {
+		RoomName string   `json:"roomName"`
+		Peers    []string `json:"peers"`
+	}
+
+	MessageGetRoomJson struct {
+		RoomName string `json:"roomName"`
+	}
+	MessageJoinRoomJson struct {
+		RoomName string `json:"roomName"`
+	}
+	MessageRoomListJson struct {
+		Rooms []string `json:"rooms"`
+	}
+	MessageCreateRoomJson struct {
+		RoomName string `json:"roomName"`
+	}
+	MessageUserRegisterJson struct {
+		Email    string `json:"email"`
+		Password string `json:"password"`
+	}
+)
 
 func (m JsonPayload) MarshalJSON() ([]byte, error) {
 	if m == nil {
@@ -33,11 +70,6 @@ func (m JsonPayload) GetType() string {
 	return EventUnknown
 }
 
-type EventJson struct {
-	EventType string      `json:"type"`
-	Payload   JsonPayload `json:"payload"`
-}
-
 func (e EventJson) GetType() string {
 	return e.EventType
 }
@@ -50,11 +82,6 @@ func (e EventJson) Serialize() ([]byte, error) {
 	return json.Marshal(e)
 }
 
-type MessageInJson struct {
-	Message string `json:"message"`
-	From    string `json:"from"`
-}
-
 func (m MessageInJson) GetMessage() string {
 	return m.Message
 }
@@ -64,7 +91,7 @@ func (m MessageInJson) GetFrom() string {
 }
 
 func (m MessageInJson) GetType() string {
-	return EventInMessage
+	return EventMessageIn
 }
 
 func (m MessageInJson) GenerateMessageOut() MessageSerializable {
@@ -77,21 +104,12 @@ func (m MessageInJson) GenerateMessageOut() MessageSerializable {
 	}
 }
 
-type MessageOutJson struct {
-	Sent time.Time `json:"sent"`
-	MessageInJson
-}
-
 func (m MessageOutJson) GetType() string {
-	return EventOutMessage
+	return EventMessageOut
 }
 
 func (m *MessageOutJson) Serialize() ([]byte, error) {
 	return json.Marshal(m)
-}
-
-type MessageRoomListJson struct {
-	Rooms []string `json:"rooms"`
 }
 
 func (m MessageRoomListJson) GetType() string {
@@ -102,45 +120,28 @@ func (m *MessageRoomListJson) Serialize() ([]byte, error) {
 	return json.Marshal(m)
 }
 
-type MessageCreateRoomJson struct {
-	RoomName string `json:"roomName"`
-}
-
 func (m MessageCreateRoomJson) GetType() string {
-	return EventCreateRoom
+	return EventRoomCreate
 }
 
 func (m MessageCreateRoomJson) GetRoomName() string {
 	return m.RoomName
 }
 
-type MessageJoinRoomJson struct {
-	RoomName string `json:"roomName"`
-}
-
 func (m MessageJoinRoomJson) GetType() string {
-	return EventJoinRoom
+	return EventRoomJoin
 }
 
 func (m MessageJoinRoomJson) GetRoomName() string {
 	return m.RoomName
 }
 
-type MessageGetRoomJson struct {
-	RoomName string `json:"roomName"`
-}
-
 func (m MessageGetRoomJson) GetType() string {
-	return EventGetRoom
+	return EventRoomGet
 }
 
 func (m MessageGetRoomJson) GetRoomName() string {
 	return m.RoomName
-}
-
-type MessageRoomJson struct {
-	RoomName string   `json:"roomName"`
-	Peers    []string `json:"peers"`
 }
 
 func (m MessageRoomJson) GetType() string {
@@ -151,10 +152,6 @@ func (m *MessageRoomJson) Serialize() ([]byte, error) {
 	return json.Marshal(m)
 }
 
-type MessageErrorJson struct {
-	Error string `json:"error"`
-}
-
 func (m MessageErrorJson) GetType() string {
 	return EventError
 }
@@ -163,43 +160,14 @@ func (m *MessageErrorJson) Serialize() ([]byte, error) {
 	return json.Marshal(m)
 }
 
-func parseJsonEvent(payload []byte) (Event, error) {
-	var event *EventJson
-	if err := json.Unmarshal(payload, &event); err != nil {
-		return nil, err
-	}
-	return event, nil
+func (m *MessageUserRegisterJson) GetType() string {
+	return EventChatRegister
 }
 
-func (e *EventJson) ParseMessage() (Message, error) {
-	jsonMessage, _ := e.GetPayload().Serialize()
-	switch e.GetType() {
-	case EventInMessage:
-		var message *MessageInJson
-		if err := json.Unmarshal(jsonMessage, &message); err != nil {
-			return nil, errors.Join(ErrBadJsonPayload, fmt.Errorf("%v", err))
-		}
-		return message, nil
-	case EventCreateRoom:
-		var message *MessageCreateRoomJson
-		if err := json.Unmarshal(jsonMessage, &message); err != nil {
-			return nil, errors.Join(ErrBadJsonPayload, fmt.Errorf("%v", err))
-		}
-		return message, nil
-	case EventJoinRoom:
-		var message *MessageJoinRoomJson
-		if err := json.Unmarshal(jsonMessage, &message); err != nil {
-			return nil, errors.Join(ErrBadJsonPayload, fmt.Errorf("%v", err))
-		}
-		return message, nil
-	case EventGetRoom:
-		var message *MessageGetRoomJson
-		if err := json.Unmarshal(jsonMessage, &message); err != nil {
-			return nil, errors.Join(ErrBadJsonPayload, fmt.Errorf("%v", err))
-		}
-		return message, nil
+func (m *MessageUserRegisterJson) GetEmail() string {
+	return m.Email
+}
 
-	default:
-		return nil, ErrUnsupportedMessageType
-	}
+func (m *MessageUserRegisterJson) GetPassword() string {
+	return m.Password
 }

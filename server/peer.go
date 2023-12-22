@@ -27,31 +27,59 @@ const (
 	PeerStatusOffline = "offline"
 )
 
-type ChatPeer struct {
-	server   *ChatServer
-	con      *websocket.Conn
-	outgoing chan MessageSerializable
-	peerId   string
-	rooms    map[*ChatRoom]bool
-	peerType PeerType
-	status   PeerStatus
-}
+type (
+	ChatPeer struct {
+		server      *ChatServer
+		con         *websocket.Conn
+		parser      IParser
+		serializer  ISerializer
+		outgoing    chan MessageSerializable
+		peerId      string
+		rooms       map[*ChatRoom]bool
+		peerType    PeerType
+		status      PeerStatus
+		registerred bool
+	}
+	UserCredentials struct {
+		email    string
+		password string
+	}
+	ChatUser struct {
+		*ChatPeer
+		UserCredentials
+	}
+)
 
 func NewChatPeer(chatServer *ChatServer, con *websocket.Conn) *ChatPeer {
 	return &ChatPeer{
-		server:   chatServer,
-		con:      con,
-		outgoing: make(chan MessageSerializable),
-		peerId:   uuid.NewString(),
-		peerType: PeerTypeUnset,
-		rooms:    map[*ChatRoom]bool{},
-		status:   PeerStatusOnline,
+		server:      chatServer,
+		con:         con,
+		outgoing:    make(chan MessageSerializable),
+		peerId:      uuid.NewString(),
+		peerType:    PeerTypeUnset,
+		rooms:       map[*ChatRoom]bool{},
+		status:      PeerStatusOnline,
+		registerred: false,
+	}
+}
+
+func NewUserCredentials(email, password string) UserCredentials {
+	return UserCredentials{
+		email:    email,
+		password: password,
+	}
+}
+
+func NewChatUser(p *ChatPeer, c UserCredentials) *ChatUser {
+	return &ChatUser{
+		UserCredentials: c,
+		ChatPeer:        p,
 	}
 }
 
 func (p *ChatPeer) readMessages() {
 	defer func() {
-		p.server.RemovePeer(p)
+		p.server.DisconnectPeer(p)
 	}()
 
 	// Configure Wait time for Pong response, use Current time + pongWait
@@ -94,7 +122,7 @@ func (p *ChatPeer) readMessages() {
 func (p *ChatPeer) writeMessages() {
 	ticker := time.NewTicker(pingInterval)
 	defer func() {
-		p.server.RemovePeer(p)
+		p.server.DisconnectPeer(p)
 		ticker.Stop()
 	}()
 	for {
@@ -131,6 +159,10 @@ func (p *ChatPeer) writeMessages() {
 	}
 }
 
+func (p *ChatPeer) isRegisterred() bool {
+	return p.registerred
+}
+
 // pongHandler is used to handle PongMessages for the Client
 func (p *ChatPeer) pongHandler(pongMsg string) error {
 	// Current time + Pong Wait time
@@ -138,7 +170,7 @@ func (p *ChatPeer) pongHandler(pongMsg string) error {
 	return p.con.SetReadDeadline(time.Now().Add(pongWait))
 }
 
-func (p *ChatPeer) initPeerType(mesageType int) {
+func (p *ChatPeer) initPeer(mesageType int) {
 	if p.peerType == PeerTypeUnset {
 		switch mesageType {
 		case websocket.TextMessage:
@@ -161,7 +193,7 @@ func (p *ChatPeer) writeMessage(data []byte) error {
 
 func (p *ChatPeer) readMessage() (int, []byte, error) {
 	messageType, payload, err := p.con.ReadMessage()
-	p.initPeerType(messageType)
+	p.initPeer(messageType)
 	return messageType, payload, err
 }
 

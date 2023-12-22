@@ -20,9 +20,11 @@ var (
 	ErrUnsupporterPeerType = NewAppError("unsupported peer type")
 	// room errors
 
-	ErrRoomExist         = NewChatError("room witch such name exist")
-	ErrRoomNotExist      = NewChatError("room does not exist")
-	ErrRoomAlreadyJoined = NewChatError("room already joined")
+	ErrRoomExist              = NewChatError("room witch such name exist")
+	ErrRoomNotExist           = NewChatError("room does not exist")
+	ErrRoomAlreadyJoined      = NewChatError("room already joined")
+	ErrUserAlreadyRegisterred = NewChatError("user already registerred")
+	ErrUserNotRegisterred     = NewChatError("user not registerred")
 )
 
 type (

@@ -23,6 +23,10 @@ type (
 	MessageGetRoom interface {
 		GetRoomName() string
 	}
+	MessageRegister interface {
+		GetEmail() string
+		GetPassword() string
+	}
 )
 
 func createMessageOut(m Message, peerType PeerType) (MessageSerializable, error) {

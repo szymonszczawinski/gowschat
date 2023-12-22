@@ -9,23 +9,24 @@ import (
 )
 
 const (
-	// EventInMessage is the event name for new chat messages sent
-	EventInMessage = "in_message"
-	// EventOutMessage is a response to send_message
-	EventOutMessage = "out_message"
+	EventChatRegister = "chat_register"
+	EventChatJoin     = "chat_join"
+	// EventMessageIn is the event name for new chat messages sent
+	EventMessageIn = "message_in"
+	// EventMessageOut is a response to send_message
+	EventMessageOut = "message_out"
 	// EventInitialPeerMessage is a initial message sent to peer after connect
-	EventInitialPeerMessage = "initial_message"
-	EventCreateRoom         = "create_room"
-	EventCreateRoomAck      = "create_room_ack"
-	EventGetRoom            = "get_room"
-	EventJoinRoom           = "join_room"
-	EventRoom               = "room"
-	EventLeaveRoom          = "leave_room"
-	EventLeaveRoomAck       = "leave_room_ack"
-	EventGetRoomList        = "list_rooms"
-	EventRoomList           = "list_rooms_resp"
-	EventError              = "error"
-	EventUnknown            = "unknown"
+	EventRoomCreate    = "room_create"
+	EventRoomCreateAck = "room_create_ack"
+	EventRoomGet       = "room_get"
+	EventRoomJoin      = "room_join"
+	EventRoom          = "room"
+	EventRoomLeave     = "room_leave"
+	EventRoomLeaveAck  = "room_leave_ack"
+	EventRoomListGet   = "room_list_get"
+	EventRoomList      = "room_list"
+	EventError         = "error"
+	EventUnknown       = "unknown"
 )
 
 type (
@@ -35,8 +36,9 @@ type (
 		Serialize() ([]byte, error)
 		ParseMessage() (Message, error)
 	}
+
+	EventHandler func(event Event, p *ChatPeer) error
 )
-type EventHandler func(event Event, p *ChatPeer) error
 
 func parseEvent(messageType int, payload []byte) (Event, error) {
 	switch messageType {
@@ -68,6 +70,21 @@ func createEvent(m MessageSerializable, peerType PeerType) (Event, error) {
 	return nil, ErrUnsupporterPeerType
 }
 
+func HandlerChatRegister(e Event, p *ChatPeer) error {
+	if message, err := e.ParseMessage(); err != nil {
+		log.Println("ERROR", err)
+	} else {
+		if messageRegister, ok := message.(MessageRegister); ok {
+			if err := p.server.RegisterPeer(p, messageRegister.GetEmail(), messageRegister.GetPassword()); err != nil {
+				return err
+			}
+		} else {
+			return ErrUnsupportedMessageType
+		}
+	}
+	return nil
+}
+
 func HandlerMessageIn(event Event, p *ChatPeer) error {
 	if message, err := event.ParseMessage(); err != nil {
 		log.Println("ERROR", err)
@@ -77,7 +94,7 @@ func HandlerMessageIn(event Event, p *ChatPeer) error {
 		if err != nil {
 			return err
 		}
-		for peer := range p.server.peers {
+		for peer := range p.server.connectedPeers {
 			// FIXME:: re-enable same peer check
 			// if p.peerId != peer.peerId {
 			if peer.status == PeerStatusOnline {
@@ -170,9 +187,9 @@ func HandlerRoomList(e Event, p *ChatPeer) error {
 	return nil
 }
 
-func HanlerError(err error, e Event, p *ChatPeer) {
+func HandlerError(err error, e Event, p *ChatPeer) {
 	log.Printf("ERROR :: handle event %v -> %v", e.GetType(), err.Error())
-	var appErr AppError
+	var appErr ChatError
 	if errors.As(err, &appErr) {
 		errorMessage, e := createMessageError(err, p.peerType)
 		if e != nil {

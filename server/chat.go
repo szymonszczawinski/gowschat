@@ -6,36 +6,51 @@ import (
 )
 
 type ChatServer struct {
-	handlers map[string]EventHandler
-	peers    map[*ChatPeer]bool
-	rooms    map[*ChatRoom]bool
-	muPeers  sync.RWMutex
-	muRooms  sync.RWMutex
+	handlers       map[string]EventHandler
+	connectedPeers map[*ChatPeer]bool
+	chatUsers      map[UserCredentials]*ChatUser
+	rooms          map[*ChatRoom]bool
+	muPeers        sync.RWMutex
+	muUsers        sync.RWMutex
+	muRooms        sync.RWMutex
 }
 
 func NewChatServer() *ChatServer {
 	server := &ChatServer{
-		peers:    map[*ChatPeer]bool{},
-		handlers: map[string]EventHandler{},
-		rooms:    map[*ChatRoom]bool{},
+		connectedPeers: map[*ChatPeer]bool{},
+		chatUsers:      map[UserCredentials]*ChatUser{},
+		handlers:       map[string]EventHandler{},
+		rooms:          map[*ChatRoom]bool{},
 	}
 	server.setupHandlers()
 	return server
 }
 
-func (chat *ChatServer) AddPeer(peer *ChatPeer) {
+func (chat *ChatServer) ConnectPeer(peer *ChatPeer) {
 	chat.muPeers.Lock()
 	defer chat.muPeers.Unlock()
-	chat.peers[peer] = true
+	chat.connectedPeers[peer] = true
 }
 
-func (chat *ChatServer) RemovePeer(peer *ChatPeer) {
+func (chat *ChatServer) DisconnectPeer(peer *ChatPeer) {
 	chat.muPeers.Lock()
 	defer chat.muPeers.Unlock()
-	if _, exist := chat.peers[peer]; exist {
+	if _, exist := chat.connectedPeers[peer]; exist {
 		peer.con.Close()
-		delete(chat.peers, peer)
+		delete(chat.connectedPeers, peer)
 	}
+}
+
+func (chat *ChatServer) RegisterPeer(p *ChatPeer, email, password string) error {
+	chat.muUsers.Lock()
+	defer chat.muUsers.Unlock()
+	credentials := NewUserCredentials(email, password)
+	if _, exist := chat.chatUsers[credentials]; exist {
+		return ErrUserAlreadyRegisterred
+	}
+	chatUser := NewChatUser(p, credentials)
+	chat.chatUsers[credentials] = chatUser
+	return nil
 }
 
 func (chat *ChatServer) createRoom(name string, creator *ChatPeer) (*ChatRoom, error) {
@@ -77,24 +92,25 @@ func (chat *ChatServer) getRoom(name string) (*ChatRoom, error) {
 	return nil, ErrRoomNotExist
 }
 
-func (chat *ChatServer) Run() {
-}
-
 func (chat *ChatServer) setupHandlers() {
-	chat.handlers[EventInMessage] = HandlerMessageIn
-	chat.handlers[EventGetRoomList] = HandlerRoomList
-	chat.handlers[EventCreateRoom] = HandlerCreateRoom
-	chat.handlers[EventJoinRoom] = HandlerJoinRoom
-	chat.handlers[EventGetRoom] = HandlerGetRoom
+	chat.handlers[EventMessageIn] = HandlerMessageIn
+	chat.handlers[EventRoomListGet] = HandlerRoomList
+	chat.handlers[EventRoomCreate] = HandlerCreateRoom
+	chat.handlers[EventRoomJoin] = HandlerJoinRoom
+	chat.handlers[EventRoomGet] = HandlerGetRoom
+	chat.handlers[EventChatRegister] = HandlerChatRegister
 }
 
 func (chat *ChatServer) routeEvent(e Event, p *ChatPeer) error {
 	if handler, ok := chat.handlers[e.GetType()]; ok {
-		if err := handler(e, p); err != nil {
-			HanlerError(err, e, p)
+		if p.isRegisterred() || e.GetType() == EventChatRegister {
+			if err := handler(e, p); err != nil {
+				HandlerError(err, e, p)
+			}
 		}
-		return nil
+		HandlerError(ErrUserNotRegisterred, e, p)
 	} else {
 		return ErrEventNotSupported
 	}
+	return nil
 }
