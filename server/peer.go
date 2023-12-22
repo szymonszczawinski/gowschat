@@ -175,6 +175,7 @@ func (p *ChatPeer) initPeer(mesageType int) {
 		switch mesageType {
 		case websocket.TextMessage:
 			p.peerType = PeerTypeJson
+
 		case websocket.BinaryMessage:
 			p.peerType = PeerTypeProto
 		}
