@@ -12,7 +12,6 @@ type (
 	MessageIn interface {
 		GetFrom() string
 		GetMessage() string
-		GenerateMessageOut() MessageSerializable
 	}
 	MessageCreateRoom interface {
 		GetRoomName() string

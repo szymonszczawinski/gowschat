@@ -4,6 +4,7 @@ import (
 	"errors"
 	"fmt"
 	"gowschat/server/api"
+	"gowschat/server/chatjson"
 	"log"
 	"time"
 
@@ -178,7 +179,7 @@ func (p *ChatPeer) initPeer(mesageType int) {
 		switch mesageType {
 		case websocket.TextMessage:
 			p.PeerType = PeerTypeJson
-			p.parser = &ParserJson{}
+			p.parser = &chatjson.ParserJson{}
 		case websocket.BinaryMessage:
 			p.PeerType = PeerTypeProto
 		}
@@ -223,7 +224,7 @@ func (p *ChatPeer) createMessageRoomList() (api.MessageSerializable, error) {
 	switch p.PeerType {
 	case PeerTypeJson:
 
-		message := &MessageRoomListJson{
+		message := &chatjson.MessageRoomListJson{
 			Rooms: rooms,
 		}
 		return message, nil
@@ -239,7 +240,7 @@ func (p *ChatPeer) createMessageRoom(r *ChatRoom) (api.MessageSerializable, erro
 	}
 	switch p.PeerType {
 	case PeerTypeJson:
-		message := &MessageRoomJson{
+		message := &chatjson.MessageRoomJson{
 			RoomName: r.name,
 			Peers:    peers,
 		}
@@ -252,7 +253,7 @@ func (p *ChatPeer) createMessageRoom(r *ChatRoom) (api.MessageSerializable, erro
 func (p *ChatPeer) createMessageError(appError error) (api.MessageSerializable, error) {
 	switch p.PeerType {
 	case PeerTypeJson:
-		message := &MessageErrorJson{
+		message := &chatjson.MessageErrorJson{
 			Error: appError.Error(),
 		}
 		return message, nil
@@ -282,22 +283,20 @@ func (p *ChatPeer) createMessageOut(m api.Message) (api.MessageSerializable, err
 	case api.MessageIn:
 		switch p.PeerType {
 		case PeerTypeJson:
-			return v.GenerateMessageOut(), nil
+			messgeOut := &chatjson.MessageOutJson{
+				Sent: time.Now(),
+				MessageInJson: chatjson.MessageInJson{
+					Message: v.GetMessage(),
+					From:    v.GetFrom(),
+				},
+			}
+
+			return messgeOut, nil
 		default:
 			return nil, api.ErrUnsupporterPeerType
 		}
 	default:
 		return nil, api.ErrIncorrectMessageTypeIn
 
-	}
-}
-
-func (p *ChatPeer) GenerateMessageOut(m api.MessageIn) api.MessageSerializable {
-	return &MessageOutJson{
-		Sent: time.Now(),
-		MessageInJson: MessageInJson{
-			Message: m.GetMessage(),
-			From:    m.GetFrom(),
-		},
 	}
 }
