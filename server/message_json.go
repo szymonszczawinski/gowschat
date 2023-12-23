@@ -3,6 +3,7 @@ package server
 import (
 	"encoding/json"
 	"errors"
+	"gowschat/server/api"
 	"time"
 )
 
@@ -67,14 +68,18 @@ func (m JsonPayload) Serialize() ([]byte, error) {
 }
 
 func (m JsonPayload) GetType() string {
-	return EventUnknown
+	return api.EventUnknown
+}
+
+func (m JsonPayload) CreateEvent(payload []byte) (api.Event, error) {
+	return nil, api.ErrOperationNotSupported
 }
 
 func (e EventJson) GetType() string {
 	return e.EventType
 }
 
-func (e EventJson) GetPayload() MessageSerializable {
+func (e EventJson) GetPayload() api.MessageSerializable {
 	return e.Payload
 }
 
@@ -91,37 +96,41 @@ func (m MessageInJson) GetFrom() string {
 }
 
 func (m MessageInJson) GetType() string {
-	return EventMessageIn
-}
-
-func (m MessageInJson) GenerateMessageOut() MessageSerializable {
-	return &MessageOutJson{
-		Sent: time.Now(),
-		MessageInJson: MessageInJson{
-			Message: m.GetMessage(),
-			From:    m.GetFrom(),
-		},
-	}
+	return api.EventMessageIn
 }
 
 func (m MessageOutJson) GetType() string {
-	return EventMessageOut
+	return api.EventMessageOut
 }
 
 func (m *MessageOutJson) Serialize() ([]byte, error) {
 	return json.Marshal(m)
 }
 
+func (m *MessageOutJson) CreateEvent(payload []byte) (api.Event, error) {
+	return &EventJson{
+		EventType: m.GetType(),
+		Payload:   payload,
+	}, nil
+}
+
 func (m MessageRoomListJson) GetType() string {
-	return EventRoomList
+	return api.EventRoomList
 }
 
 func (m *MessageRoomListJson) Serialize() ([]byte, error) {
 	return json.Marshal(m)
 }
 
+func (m *MessageRoomListJson) CreateEvent(payload []byte) (api.Event, error) {
+	return &EventJson{
+		EventType: m.GetType(),
+		Payload:   payload,
+	}, nil
+}
+
 func (m MessageCreateRoomJson) GetType() string {
-	return EventRoomCreate
+	return api.EventRoomCreate
 }
 
 func (m MessageCreateRoomJson) GetRoomName() string {
@@ -129,7 +138,7 @@ func (m MessageCreateRoomJson) GetRoomName() string {
 }
 
 func (m MessageJoinRoomJson) GetType() string {
-	return EventRoomJoin
+	return api.EventRoomJoin
 }
 
 func (m MessageJoinRoomJson) GetRoomName() string {
@@ -137,7 +146,7 @@ func (m MessageJoinRoomJson) GetRoomName() string {
 }
 
 func (m MessageGetRoomJson) GetType() string {
-	return EventRoomGet
+	return api.EventRoomGet
 }
 
 func (m MessageGetRoomJson) GetRoomName() string {
@@ -145,23 +154,37 @@ func (m MessageGetRoomJson) GetRoomName() string {
 }
 
 func (m MessageRoomJson) GetType() string {
-	return EventRoom
+	return api.EventRoom
 }
 
 func (m *MessageRoomJson) Serialize() ([]byte, error) {
 	return json.Marshal(m)
 }
 
+func (m *MessageRoomJson) CreateEvent(payload []byte) (api.Event, error) {
+	return &EventJson{
+		EventType: m.GetType(),
+		Payload:   payload,
+	}, nil
+}
+
 func (m MessageErrorJson) GetType() string {
-	return EventError
+	return api.EventError
 }
 
 func (m *MessageErrorJson) Serialize() ([]byte, error) {
 	return json.Marshal(m)
 }
 
+func (m *MessageErrorJson) CreateEvent(payload []byte) (api.Event, error) {
+	return &EventJson{
+		EventType: m.GetType(),
+		Payload:   payload,
+	}, nil
+}
+
 func (m *MessageUserRegisterJson) GetType() string {
-	return EventChatRegister
+	return api.EventChatRegister
 }
 
 func (m *MessageUserRegisterJson) GetEmail() string {

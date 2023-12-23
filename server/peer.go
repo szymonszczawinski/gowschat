@@ -1,6 +1,9 @@
 package server
 
 import (
+	"errors"
+	"fmt"
+	"gowschat/server/api"
 	"log"
 	"time"
 
@@ -33,10 +36,10 @@ type (
 		con         *websocket.Conn
 		parser      IParser
 		serializer  ISerializer
-		outgoing    chan MessageSerializable
+		outgoing    chan api.MessageSerializable
 		peerId      string
 		rooms       map[*ChatRoom]bool
-		peerType    PeerType
+		PeerType    PeerType
 		status      PeerStatus
 		registerred bool
 	}
@@ -54,9 +57,9 @@ func NewChatPeer(chatServer *ChatServer, con *websocket.Conn) *ChatPeer {
 	return &ChatPeer{
 		server:      chatServer,
 		con:         con,
-		outgoing:    make(chan MessageSerializable),
+		outgoing:    make(chan api.MessageSerializable),
 		peerId:      uuid.NewString(),
-		peerType:    PeerTypeUnset,
+		PeerType:    PeerTypeUnset,
 		rooms:       map[*ChatRoom]bool{},
 		status:      PeerStatusOnline,
 		registerred: false,
@@ -107,7 +110,7 @@ func (p *ChatPeer) readMessages() {
 			break // Break the loop to close conn & Cleanup
 		}
 
-		event, err := parseEvent(messageType, payload)
+		event, err := p.parser.ParseEvent(messageType, payload)
 		if err != nil {
 			log.Println("ERROR :: parseEvent:", err)
 		} else {
@@ -134,7 +137,7 @@ func (p *ChatPeer) writeMessages() {
 				}
 				return
 			}
-			event, err := createEvent(messageOut, p.peerType)
+			event, err := p.createEvent(messageOut)
 			if err != nil {
 				log.Println("ERROR :: createEvent:", err)
 				continue
@@ -171,25 +174,25 @@ func (p *ChatPeer) pongHandler(pongMsg string) error {
 }
 
 func (p *ChatPeer) initPeer(mesageType int) {
-	if p.peerType == PeerTypeUnset {
+	if p.PeerType == PeerTypeUnset {
 		switch mesageType {
 		case websocket.TextMessage:
-			p.peerType = PeerTypeJson
-
+			p.PeerType = PeerTypeJson
+			p.parser = &ParserJson{}
 		case websocket.BinaryMessage:
-			p.peerType = PeerTypeProto
+			p.PeerType = PeerTypeProto
 		}
 	}
 }
 
 func (p *ChatPeer) writeMessage(data []byte) error {
-	if p.peerType == PeerTypeJson {
+	if p.PeerType == PeerTypeJson {
 		return p.con.WriteMessage(websocket.TextMessage, data)
 	}
-	if p.peerType == PeerTypeProto {
+	if p.PeerType == PeerTypeProto {
 		return p.con.WriteMessage(websocket.BinaryMessage, data)
 	}
-	return ErrUnsupporterPeerType
+	return api.ErrUnsupporterPeerType
 }
 
 func (p *ChatPeer) readMessage() (int, []byte, error) {
@@ -203,11 +206,98 @@ func (p *ChatPeer) close() error {
 }
 
 func (p *ChatPeer) writeError(err error) error {
-	if p.peerType == PeerTypeJson {
+	if p.PeerType == PeerTypeJson {
 		return p.con.WriteMessage(websocket.TextMessage, []byte(err.Error()))
 	}
-	if p.peerType == PeerTypeProto {
+	if p.PeerType == PeerTypeProto {
 		return p.con.WriteMessage(websocket.BinaryMessage, []byte(err.Error()))
 	}
-	return ErrUnsupporterPeerType
+	return api.ErrUnsupporterPeerType
+}
+
+func (p *ChatPeer) createMessageRoomList() (api.MessageSerializable, error) {
+	rooms := []string{}
+	for room := range p.server.rooms {
+		rooms = append(rooms, room.name)
+	}
+	switch p.PeerType {
+	case PeerTypeJson:
+
+		message := &MessageRoomListJson{
+			Rooms: rooms,
+		}
+		return message, nil
+	default:
+		return nil, api.ErrUnsupporterPeerType
+	}
+}
+
+func (p *ChatPeer) createMessageRoom(r *ChatRoom) (api.MessageSerializable, error) {
+	peers := []string{}
+	for peer := range r.peers {
+		peers = append(peers, peer.peerId)
+	}
+	switch p.PeerType {
+	case PeerTypeJson:
+		message := &MessageRoomJson{
+			RoomName: r.name,
+			Peers:    peers,
+		}
+		return message, nil
+	default:
+		return nil, api.ErrUnsupporterPeerType
+	}
+}
+
+func (p *ChatPeer) createMessageError(appError error) (api.MessageSerializable, error) {
+	switch p.PeerType {
+	case PeerTypeJson:
+		message := &MessageErrorJson{
+			Error: appError.Error(),
+		}
+		return message, nil
+	default:
+		return nil, api.ErrUnsupporterPeerType
+	}
+}
+
+func (p *ChatPeer) createEvent(m api.MessageSerializable) (api.Event, error) {
+	messagedata, err := m.Serialize()
+	if err != nil {
+		log.Println(err)
+		return nil, err
+	}
+
+	if p.PeerType == PeerTypeJson {
+		return m.CreateEvent(messagedata)
+	}
+	if p.PeerType == PeerTypeProto {
+		return nil, errors.Join(api.ErrUnsupporterPeerType, fmt.Errorf("%v", p.PeerType))
+	}
+	return nil, api.ErrUnsupporterPeerType
+}
+
+func (p *ChatPeer) createMessageOut(m api.Message) (api.MessageSerializable, error) {
+	switch v := m.(type) {
+	case api.MessageIn:
+		switch p.PeerType {
+		case PeerTypeJson:
+			return v.GenerateMessageOut(), nil
+		default:
+			return nil, api.ErrUnsupporterPeerType
+		}
+	default:
+		return nil, api.ErrIncorrectMessageTypeIn
+
+	}
+}
+
+func (p *ChatPeer) GenerateMessageOut(m api.MessageIn) api.MessageSerializable {
+	return &MessageOutJson{
+		Sent: time.Now(),
+		MessageInJson: MessageInJson{
+			Message: m.GetMessage(),
+			From:    m.GetFrom(),
+		},
+	}
 }

@@ -4,6 +4,7 @@ import (
 	"encoding/json"
 	"errors"
 	"fmt"
+	"gowschat/server/api"
 )
 
 type EventJson struct {
@@ -11,40 +12,40 @@ type EventJson struct {
 	Payload   JsonPayload `json:"payload"`
 }
 
-func (e *EventJson) ParseMessage() (Message, error) {
+func (e *EventJson) ParseMessage() (api.Message, error) {
 	jsonMessage, _ := e.GetPayload().Serialize()
 	switch e.GetType() {
-	case EventMessageIn:
+	case api.EventMessageIn:
 		var message *MessageInJson
 		if err := json.Unmarshal(jsonMessage, &message); err != nil {
-			return nil, errors.Join(ErrBadJsonPayload, fmt.Errorf("%v", err))
+			return nil, errors.Join(api.ErrBadJsonPayload, fmt.Errorf("%v", err))
 		}
 		return message, nil
-	case EventRoomCreate:
+	case api.EventRoomCreate:
 		var message *MessageCreateRoomJson
 		if err := json.Unmarshal(jsonMessage, &message); err != nil {
-			return nil, errors.Join(ErrBadJsonPayload, fmt.Errorf("%v", err))
+			return nil, errors.Join(api.ErrBadJsonPayload, fmt.Errorf("%v", err))
 		}
 		return message, nil
-	case EventRoomJoin:
+	case api.EventRoomJoin:
 		var message *MessageJoinRoomJson
 		if err := json.Unmarshal(jsonMessage, &message); err != nil {
-			return nil, errors.Join(ErrBadJsonPayload, fmt.Errorf("%v", err))
+			return nil, errors.Join(api.ErrBadJsonPayload, fmt.Errorf("%v", err))
 		}
 		return message, nil
-	case EventRoomGet:
+	case api.EventRoomGet:
 		var message *MessageGetRoomJson
 		if err := json.Unmarshal(jsonMessage, &message); err != nil {
-			return nil, errors.Join(ErrBadJsonPayload, fmt.Errorf("%v", err))
+			return nil, errors.Join(api.ErrBadJsonPayload, fmt.Errorf("%v", err))
 		}
 		return message, nil
 
 	default:
-		return nil, ErrUnsupportedMessageType
+		return nil, api.ErrUnsupportedMessageType
 	}
 }
 
-func parseJsonEvent(payload []byte) (Event, error) {
+func parseJsonEvent(payload []byte) (api.Event, error) {
 	var event *EventJson
 	if err := json.Unmarshal(payload, &event); err != nil {
 		return nil, err

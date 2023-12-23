@@ -1,6 +1,7 @@
 package server
 
 import (
+	"gowschat/server/api"
 	"sync"
 )
 
@@ -27,7 +28,7 @@ func (r *ChatRoom) join(p *ChatPeer) error {
 	defer r.muPeers.Unlock()
 	_, exist := r.peers[p]
 	if exist {
-		return ErrRoomAlreadyJoined
+		return api.ErrRoomAlreadyJoined
 	}
 	r.peers[p] = true
 	return nil

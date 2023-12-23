@@ -1,19 +1,24 @@
 package server
 
 import (
+	"gowschat/server/api"
 	"log"
 	"sync"
 )
 
-type ChatServer struct {
-	handlers       map[string]EventHandler
-	connectedPeers map[*ChatPeer]bool
-	chatUsers      map[UserCredentials]*ChatUser
-	rooms          map[*ChatRoom]bool
-	muPeers        sync.RWMutex
-	muUsers        sync.RWMutex
-	muRooms        sync.RWMutex
-}
+type (
+	ChatServer struct {
+		handlers       map[string]EventHandler
+		connectedPeers map[*ChatPeer]bool
+		chatUsers      map[UserCredentials]*ChatUser
+		rooms          map[*ChatRoom]bool
+		muPeers        sync.RWMutex
+		muUsers        sync.RWMutex
+		muRooms        sync.RWMutex
+	}
+
+	EventHandler func(event api.Event, p *ChatPeer) error
+)
 
 func NewChatServer() *ChatServer {
 	server := &ChatServer{
@@ -46,7 +51,7 @@ func (chat *ChatServer) RegisterPeer(p *ChatPeer, email, password string) error 
 	defer chat.muUsers.Unlock()
 	credentials := NewUserCredentials(email, password)
 	if _, exist := chat.chatUsers[credentials]; exist {
-		return ErrUserAlreadyRegisterred
+		return api.ErrUserAlreadyRegisterred
 	}
 	chatUser := NewChatUser(p, credentials)
 	chat.chatUsers[credentials] = chatUser
@@ -58,7 +63,7 @@ func (chat *ChatServer) createRoom(name string, creator *ChatPeer) (*ChatRoom, e
 	defer chat.muRooms.Unlock()
 	for room := range chat.rooms {
 		if room.name == name {
-			return nil, ErrRoomExist
+			return nil, api.ErrRoomExist
 		}
 	}
 	newRoom := NewChatRoom(name, creator)
@@ -78,7 +83,7 @@ func (chat *ChatServer) joinRoom(name string, joiner *ChatPeer) (*ChatRoom, erro
 			return room, nil
 		}
 	}
-	return nil, ErrRoomNotExist
+	return nil, api.ErrRoomNotExist
 }
 
 func (chat *ChatServer) getRoom(name string) (*ChatRoom, error) {
@@ -89,28 +94,28 @@ func (chat *ChatServer) getRoom(name string) (*ChatRoom, error) {
 			return room, nil
 		}
 	}
-	return nil, ErrRoomNotExist
+	return nil, api.ErrRoomNotExist
 }
 
 func (chat *ChatServer) setupHandlers() {
-	chat.handlers[EventMessageIn] = HandlerMessageIn
-	chat.handlers[EventRoomListGet] = HandlerRoomList
-	chat.handlers[EventRoomCreate] = HandlerCreateRoom
-	chat.handlers[EventRoomJoin] = HandlerJoinRoom
-	chat.handlers[EventRoomGet] = HandlerGetRoom
-	chat.handlers[EventChatRegister] = HandlerChatRegister
+	chat.handlers[api.EventMessageIn] = HandlerMessageIn
+	chat.handlers[api.EventRoomListGet] = HandlerRoomList
+	chat.handlers[api.EventRoomCreate] = HandlerCreateRoom
+	chat.handlers[api.EventRoomJoin] = HandlerJoinRoom
+	chat.handlers[api.EventRoomGet] = HandlerGetRoom
+	chat.handlers[api.EventChatRegister] = HandlerChatRegister
 }
 
-func (chat *ChatServer) routeEvent(e Event, p *ChatPeer) error {
+func (chat *ChatServer) routeEvent(e api.Event, p *ChatPeer) error {
 	if handler, ok := chat.handlers[e.GetType()]; ok {
-		if p.isRegisterred() || e.GetType() == EventChatRegister {
-			if err := handler(e, p); err != nil {
-				HandlerError(err, e, p)
-			}
+		// if p.isRegisterred() || e.GetType() == api.EventChatRegister {
+		if err := handler(e, p); err != nil {
+			HandlerError(err, e, p)
 		}
-		HandlerError(ErrUserNotRegisterred, e, p)
+		// }
+		// HandlerError(api.ErrUserNotRegisterred, e, p)
 	} else {
-		return ErrEventNotSupported
+		return api.ErrEventNotSupported
 	}
 	return nil
 }

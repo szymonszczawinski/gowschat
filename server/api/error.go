@@ -1,6 +1,7 @@
-package server
+package api
 
 var (
+	ErrOperationNotSupported = NewAppError("operation not suuported")
 	// payload errors
 
 	ErrIncorrectJsonFormat = NewAppError("incorrect JSON format")
