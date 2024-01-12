@@ -1,4 +1,4 @@
-package chat
+package room
 
 import (
 	"gowschat/server/api"
@@ -6,16 +6,16 @@ import (
 )
 
 type ChatRoom struct {
-	peers   map[*ChatPeer]bool
-	creator *ChatPeer
-	name    string
+	peers   map[api.IChatPeer]bool
+	creator api.IChatPeer
+	Name    string
 	muPeers sync.RWMutex
 }
 
-func NewChatRoom(name string, creator *ChatPeer) *ChatRoom {
+func NewChatRoom(name string, creator api.IChatPeer) *ChatRoom {
 	room := &ChatRoom{
-		name:    name,
-		peers:   map[*ChatPeer]bool{},
+		Name:    name,
+		peers:   map[api.IChatPeer]bool{},
 		creator: creator,
 	}
 	room.peers[creator] = true
@@ -23,7 +23,7 @@ func NewChatRoom(name string, creator *ChatPeer) *ChatRoom {
 	return room
 }
 
-func (r *ChatRoom) join(p *ChatPeer) error {
+func (r *ChatRoom) Join(p api.IChatPeer) error {
 	r.muPeers.Lock()
 	defer r.muPeers.Unlock()
 	_, exist := r.peers[p]

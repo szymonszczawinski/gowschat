@@ -2,8 +2,12 @@ package api
 
 type (
 	IParser interface {
-		ParseEvent(messageType int, pyload []byte) (Event, error)
+		ParseEvent(messageType int, pyload []byte) (IEvent, error)
 	}
 
-	ISerializer interface{}
+	ISerializer       interface{}
+	IParserSerializer interface {
+		IParser
+		ISerializer
+	}
 )
