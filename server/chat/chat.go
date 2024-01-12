@@ -1,4 +1,4 @@
-package server
+package chat
 
 import (
 	"gowschat/server/api"
@@ -58,6 +58,35 @@ func (chat *ChatServer) RegisterPeer(p *ChatPeer, email, password string) error 
 	return nil
 }
 
+func (chat *ChatServer) RouteEvent(e api.Event, p *ChatPeer) error {
+	if handler, ok := chat.handlers[e.GetType()]; ok {
+		// if p.isRegisterred() || e.GetType() == api.EventChatRegister {
+		if err := handler(e, p); err != nil {
+			HandlerError(err, e, p)
+		}
+		// }
+		// HandlerError(api.ErrUserNotRegisterred, e, p)
+	} else {
+		return api.ErrEventNotSupported
+	}
+	return nil
+}
+
+func (chat *ChatServer) BroadcastMessage(m api.Message) error {
+	for peer := range chat.connectedPeers {
+		messageOut, err := peer.createMessageOut(m)
+		if err != nil {
+			return err
+		}
+		// FIXME:: re-enable same peer check
+		// if p.peerId != peer.peerId {
+		if peer.status == PeerStatusOnline {
+			peer.outgoing <- messageOut
+		}
+	}
+	return nil
+}
+
 func (chat *ChatServer) createRoom(name string, creator *ChatPeer) (*ChatRoom, error) {
 	chat.muRooms.Lock()
 	defer chat.muRooms.Unlock()
@@ -104,18 +133,4 @@ func (chat *ChatServer) setupHandlers() {
 	chat.handlers[api.EventRoomJoin] = HandlerJoinRoom
 	chat.handlers[api.EventRoomGet] = HandlerGetRoom
 	chat.handlers[api.EventChatRegister] = HandlerChatRegister
-}
-
-func (chat *ChatServer) routeEvent(e api.Event, p *ChatPeer) error {
-	if handler, ok := chat.handlers[e.GetType()]; ok {
-		// if p.isRegisterred() || e.GetType() == api.EventChatRegister {
-		if err := handler(e, p); err != nil {
-			HandlerError(err, e, p)
-		}
-		// }
-		// HandlerError(api.ErrUserNotRegisterred, e, p)
-	} else {
-		return api.ErrEventNotSupported
-	}
-	return nil
 }

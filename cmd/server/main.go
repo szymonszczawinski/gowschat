@@ -3,6 +3,7 @@ package main
 import (
 	"context"
 	"gowschat/server"
+	"gowschat/server/chat"
 	"log"
 	"net/http"
 	"os"
@@ -21,7 +22,7 @@ func init() {
 
 func main() {
 	log.Println("Hello Chat Server")
-	chatServer := server.NewChatServer()
+	chatServer := chat.NewChatServer()
 	// go chatServer.run()
 	router := gin.Default()
 

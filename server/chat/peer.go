@@ -1,4 +1,4 @@
-package server
+package chat
 
 import (
 	"errors"
@@ -25,6 +25,7 @@ type (
 const (
 	PeerTypeJson  = "json"
 	PeerTypeProto = "proto"
+	PeerTypeWeb   = "web"
 	PeerTypeUnset = "unset"
 
 	PeerStatusOnline  = "online"
@@ -35,8 +36,8 @@ type (
 	ChatPeer struct {
 		server      *ChatServer
 		con         *websocket.Conn
-		parser      IParser
-		serializer  ISerializer
+		parser      api.IParser
+		serializer  api.ISerializer
 		outgoing    chan api.MessageSerializable
 		peerId      string
 		rooms       map[*ChatRoom]bool
@@ -81,7 +82,7 @@ func NewChatUser(p *ChatPeer, c UserCredentials) *ChatUser {
 	}
 }
 
-func (p *ChatPeer) readMessages() {
+func (p *ChatPeer) ReadMessages() {
 	defer func() {
 		p.server.DisconnectPeer(p)
 	}()
@@ -116,14 +117,14 @@ func (p *ChatPeer) readMessages() {
 			log.Println("ERROR :: parseEvent:", err)
 		} else {
 			// Route the Event
-			if err := p.server.routeEvent(event, p); err != nil {
+			if err := p.server.RouteEvent(event, p); err != nil {
 				log.Println("ERROR :: routeEvent", err)
 			}
 		}
 	}
 }
 
-func (p *ChatPeer) writeMessages() {
+func (p *ChatPeer) WriteMessages() {
 	ticker := time.NewTicker(pingInterval)
 	defer func() {
 		p.server.DisconnectPeer(p)

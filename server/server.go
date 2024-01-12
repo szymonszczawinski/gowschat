@@ -1,6 +1,7 @@
 package server
 
 import (
+	"gowschat/server/chat"
 	"log"
 	"net/http"
 
@@ -14,7 +15,7 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin:     func(r *http.Request) bool { return true },
 }
 
-func ServeWs(chatServer *ChatServer, c *gin.Context) {
+func ServeWs(chatServer *chat.ChatServer, c *gin.Context) {
 	log.Println("New connection")
 	// Begin by upgrading the HTTP request
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
@@ -22,10 +23,10 @@ func ServeWs(chatServer *ChatServer, c *gin.Context) {
 		log.Println("ERROR ::", err)
 		return
 	}
-	peer := NewChatPeer(chatServer, conn)
+	peer := chat.NewChatPeer(chatServer, conn)
 	chatServer.ConnectPeer(peer)
-	go peer.readMessages()
-	go peer.writeMessages()
+	go peer.ReadMessages()
+	go peer.WriteMessages()
 }
 
 func Home(c *gin.Context) {

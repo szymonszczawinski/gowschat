@@ -1,4 +1,4 @@
-package server
+package chat
 
 import (
 	"errors"
@@ -26,17 +26,7 @@ func HandlerMessageIn(event api.Event, p *ChatPeer) error {
 		log.Println("ERROR", err)
 	} else {
 		// Broadcast to all other Clients
-		for peer := range p.server.connectedPeers {
-			messageOut, err := peer.createMessageOut(message)
-			if err != nil {
-				return err
-			}
-			// FIXME:: re-enable same peer check
-			// if p.peerId != peer.peerId {
-			if peer.status == PeerStatusOnline {
-				peer.outgoing <- messageOut
-			}
-		}
+		p.server.BroadcastMessage(message)
 	}
 	return nil
 }

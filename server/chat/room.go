@@ -1,4 +1,4 @@
-package server
+package chat
 
 import (
 	"gowschat/server/api"
