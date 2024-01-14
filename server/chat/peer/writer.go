@@ -1,9 +1,12 @@
 package peer
 
 import (
+	"bytes"
+	"context"
 	"gowschat/server/api"
 	"gowschat/server/chat/messages"
 	"gowschat/server/chat/parser"
+	"gowschat/server/view"
 	"log"
 	"time"
 
@@ -51,6 +54,18 @@ func (p *ChatPeer) writeMessage(m api.IMessage) error {
 			return serialisationError
 		}
 		return p.conn.WriteMessage(websocket.TextMessage, data)
+	}
+	if p.PeerType == api.PeerTypeWeb {
+		log.Println("writeMessage WEB")
+		if imMessage, isIM := m.(messages.MessageIM); isIM {
+			component := view.Message(imMessage.GetMessage())
+			buffer := &bytes.Buffer{}
+			component.Render(context.Background(), buffer)
+			err := p.conn.WriteMessage(websocket.TextMessage, buffer.Bytes())
+			if err != nil {
+				log.Println("writeMessage error WEB", err)
+			}
+		}
 	}
 	if p.PeerType == api.PeerTypeProto {
 		return api.ErrUnsupporterPeerType
