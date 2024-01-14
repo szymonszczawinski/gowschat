@@ -90,7 +90,7 @@ func ServeWs(chatServer *chat.ChatServer, c *gin.Context) {
 }
 
 func Home(c *gin.Context) {
-	c.JSON(http.StatusOK, gin.H{"data": "OK"})
+	view.Login().Render(c.Request.Context(), c.Writer)
 }
 
 func Chat(c *gin.Context) {

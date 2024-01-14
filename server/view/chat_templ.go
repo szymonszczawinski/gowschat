@@ -14,7 +14,7 @@ func getWs(otp string) string {
 	return "/ws/chat?peerType=web&otp=" + otp
 }
 
-func Chat(otp string) templ.Component {
+func ChatBak(otp string) templ.Component {
 	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
 		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
 		if !templ_7745c5c3_IsBuffer {
@@ -41,7 +41,7 @@ func Chat(otp string) templ.Component {
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"><form id=\" form\" ws-send><input name=\"chat_message\" class=\"bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg \n            focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700\n            dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500\"></form><div id=\" chat-room\">")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("\"><form id=\" form\" ws-send><input name=\"chat_message\" class=\"bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg\n            focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700\n            dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500\"></form><div id=\" chat-room\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -62,7 +62,170 @@ func Chat(otp string) templ.Component {
 			}
 			return templ_7745c5c3_Err
 		})
-		templ_7745c5c3_Err = MainLayout().Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		templ_7745c5c3_Err = MainLayout("Chat").Render(templ.WithChildren(ctx, templ_7745c5c3_Var2), templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if !templ_7745c5c3_IsBuffer {
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteTo(templ_7745c5c3_W)
+		}
+		return templ_7745c5c3_Err
+	})
+}
+
+func Chat(otp string) templ.Component {
+	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
+		if !templ_7745c5c3_IsBuffer {
+			templ_7745c5c3_Buffer = templ.GetBuffer()
+			defer templ.ReleaseBuffer(templ_7745c5c3_Buffer)
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var3 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var3 == nil {
+			templ_7745c5c3_Var3 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
+		templ_7745c5c3_Var4 := templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
+			templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
+			if !templ_7745c5c3_IsBuffer {
+				templ_7745c5c3_Buffer = templ.GetBuffer()
+				defer templ.ReleaseBuffer(templ_7745c5c3_Buffer)
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div id=\"chatMainPane\" class=\"h-full flex flex-row\">")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = contacts().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = chatPane().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			templ_7745c5c3_Err = rooms().Render(ctx, templ_7745c5c3_Buffer)
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</div>")
+			if templ_7745c5c3_Err != nil {
+				return templ_7745c5c3_Err
+			}
+			if !templ_7745c5c3_IsBuffer {
+				_, templ_7745c5c3_Err = io.Copy(templ_7745c5c3_W, templ_7745c5c3_Buffer)
+			}
+			return templ_7745c5c3_Err
+		})
+		templ_7745c5c3_Err = MainLayout("Chat").Render(templ.WithChildren(ctx, templ_7745c5c3_Var4), templ_7745c5c3_Buffer)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if !templ_7745c5c3_IsBuffer {
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteTo(templ_7745c5c3_W)
+		}
+		return templ_7745c5c3_Err
+	})
+}
+
+func chatPane() templ.Component {
+	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
+		if !templ_7745c5c3_IsBuffer {
+			templ_7745c5c3_Buffer = templ.GetBuffer()
+			defer templ.ReleaseBuffer(templ_7745c5c3_Buffer)
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var5 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var5 == nil {
+			templ_7745c5c3_Var5 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div id=\"chatPane\" class=\"h-full grow flex flex-col basis-1/2 mt-auto bg-gray-300 border border-gray-300 rounded-lg\"><div id=\"notifications\" class=\"h-6 bg-gray-500 rounded-lg\"></div><div id=\"chat_room\" class=\"bg-gray-400 flex-1 rounded-lg\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Var6 := `...`
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var6)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</div><div class=\"h-6 bg-gray-400 rounded-lg\"><form id=\"form\" class=\"flex flex-row\"><input name=\"chat_message\" class=\"h-6 rounded-lg grow\"> <button type=\"submit\" class=\"h-6 w-32 rounded-lg bg-blue-300\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Var7 := `Send`
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var7)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</button></form></div></div>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if !templ_7745c5c3_IsBuffer {
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteTo(templ_7745c5c3_W)
+		}
+		return templ_7745c5c3_Err
+	})
+}
+
+func contacts() templ.Component {
+	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
+		if !templ_7745c5c3_IsBuffer {
+			templ_7745c5c3_Buffer = templ.GetBuffer()
+			defer templ.ReleaseBuffer(templ_7745c5c3_Buffer)
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var8 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var8 == nil {
+			templ_7745c5c3_Var8 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div id=\"contactsPane\" class=\"max-w-64 h-full basis-1/4 mt-auto bg-gray-50 border border-gray-300 rounded-lg\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Var9 := `Contacts`
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var9)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</div>")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		if !templ_7745c5c3_IsBuffer {
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteTo(templ_7745c5c3_W)
+		}
+		return templ_7745c5c3_Err
+	})
+}
+
+func rooms() templ.Component {
+	return templ.ComponentFunc(func(ctx context.Context, templ_7745c5c3_W io.Writer) (templ_7745c5c3_Err error) {
+		templ_7745c5c3_Buffer, templ_7745c5c3_IsBuffer := templ_7745c5c3_W.(*bytes.Buffer)
+		if !templ_7745c5c3_IsBuffer {
+			templ_7745c5c3_Buffer = templ.GetBuffer()
+			defer templ.ReleaseBuffer(templ_7745c5c3_Buffer)
+		}
+		ctx = templ.InitializeContext(ctx)
+		templ_7745c5c3_Var10 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var10 == nil {
+			templ_7745c5c3_Var10 = templ.NopComponent
+		}
+		ctx = templ.ClearChildren(ctx)
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div id=\"roomPane\" class=\"max-w-64 h-full basis-1/4 mt-auto bg-gray-50 border border-gray-300 rounded-lg\">")
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		templ_7745c5c3_Var11 := `Rooms`
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ_7745c5c3_Var11)
+		if templ_7745c5c3_Err != nil {
+			return templ_7745c5c3_Err
+		}
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</div>")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -81,21 +244,21 @@ func Message(msg string) templ.Component {
 			defer templ.ReleaseBuffer(templ_7745c5c3_Buffer)
 		}
 		ctx = templ.InitializeContext(ctx)
-		templ_7745c5c3_Var3 := templ.GetChildren(ctx)
-		if templ_7745c5c3_Var3 == nil {
-			templ_7745c5c3_Var3 = templ.NopComponent
+		templ_7745c5c3_Var12 := templ.GetChildren(ctx)
+		if templ_7745c5c3_Var12 == nil {
+			templ_7745c5c3_Var12 = templ.NopComponent
 		}
 		ctx = templ.ClearChildren(ctx)
 		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div hx-swap-oob=\"beforeend:#chat-room\"><p class=\"text-white\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		var templ_7745c5c3_Var4 string
-		templ_7745c5c3_Var4, templ_7745c5c3_Err = templ.JoinStringErrs(msg)
+		var templ_7745c5c3_Var13 string
+		templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(msg)
 		if templ_7745c5c3_Err != nil {
-			return templ.Error{Err: templ_7745c5c3_Err, FileName: `server/view/chat.templ`, Line: 25, Col: 31}
+			return templ.Error{Err: templ_7745c5c3_Err, FileName: `server/view/chat.templ`, Line: 62, Col: 31}
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var4))
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}

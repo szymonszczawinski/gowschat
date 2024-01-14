@@ -4,12 +4,12 @@ func getWs(otp string) string {
 return "/ws/chat?peerType=web&otp=" + otp
 }
 
-templ Chat(otp string) {
-@MainLayout() {
+templ ChatBak(otp string) {
+@MainLayout("Chat") {
 <div hx-ext="ws" ws-connect={ getWs(otp) }>
     <form id=" form" ws-send>
         <input name="chat_message"
-            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg 
+            class="bg-gray-50 border border-gray-300 text-gray-900 text-sm rounded-lg
             focus:ring-blue-500 focus:border-blue-500 block w-full p-2.5 dark:bg-gray-700
             dark:border-gray-600 dark:placeholder-gray-400 dark:text-white dark:focus:ring-blue-500 dark:focus:border-blue-500" />
     </form>
@@ -19,6 +19,43 @@ templ Chat(otp string) {
     </div>
 </div>
 }
+}
+
+templ Chat(otp string) {
+@MainLayout("Chat") {
+<div id="chatMainPane" class="h-full flex flex-row">
+    @contacts()
+    @chatPane()
+    @rooms()
+</div>
+}
+}
+
+templ chatPane() {
+<div id="chatPane" class="h-full grow flex flex-col basis-1/2 mt-auto bg-gray-300 border border-gray-300 rounded-lg">
+    <div id="notifications" class="h-6 bg-gray-500 rounded-lg"></div>
+    <div id="chat_room" class="bg-gray-400 flex-1 rounded-lg">
+        ...
+    </div>
+    <div class="h-6 bg-gray-400 rounded-lg">
+        <form id="form" class="flex flex-row">
+            <input name="chat_message" class="h-6 rounded-lg grow" />
+            <button type="submit" class="h-6 w-32 rounded-lg bg-blue-300">
+                Send
+            </button>
+        </form>
+    </div>
+</div>
+}
+
+templ contacts() {
+<div id="contactsPane" class="max-w-64 h-full basis-1/4 mt-auto bg-gray-50 border border-gray-300 rounded-lg">
+    Contacts
+</div>
+}
+
+templ rooms() {
+<div id="roomPane" class="max-w-64 h-full basis-1/4 mt-auto bg-gray-50 border border-gray-300 rounded-lg">Rooms</div>
 }
 
 templ Message(msg string) {

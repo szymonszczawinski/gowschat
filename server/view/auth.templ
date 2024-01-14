@@ -1,0 +1,24 @@
+package view
+
+templ Login() {
+@MainLayout("Login") {
+@loginForm()
+}
+}
+
+templ loginForm() {
+<div id="loginPane" class="h-full grid place-content-center">
+    <div>
+        <label for="username" class="block mb-2 text-sm font-medium text-gray-900 mx-2 my-2">
+            Username
+        </label>
+        <input type="text" name="username" id="username"
+            class="block p-2 text-gray-900 border border-gray-300 rounded-lg mx-2 my-2" value="" />
+    </div>
+    <div>
+        <label for="password" class="block mb-2 text-sm font-medium text-gray-900 mx-2 my-2">Password</label>
+        <input type="password" name="password" id="password"
+            class="block p-2 text-gray-900 border border-gray-300 rounded-lg mx-2 my-2" value="" />
+    </div>
+</div>
+}
