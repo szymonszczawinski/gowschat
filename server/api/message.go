@@ -30,6 +30,11 @@ const (
 	MessageError MesageType = "error"
 )
 
+var MessageTypeToEventType = map[MesageType]EventType{
+	MessageIM:    EventMessageIM,
+	MessageError: EventError,
+}
+
 type (
 	IEvent interface {
 		GetType() string

@@ -16,7 +16,14 @@ type (
 	}
 )
 
-func NewEvent(etype api.EventType, m api.IMessage) Event {
+func NewEvent(m api.IMessage) Event {
+	return Event{
+		eventType: api.MessageTypeToEventType[m.GetType()],
+		message:   m,
+	}
+}
+
+func NewEventWithType(etype api.EventType, m api.IMessage) Event {
 	return Event{
 		eventType: etype,
 		message:   m,

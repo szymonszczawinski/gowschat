@@ -45,7 +45,7 @@ func (p *ChatPeer) sendCloseMessage() error {
 
 func (p *ChatPeer) writeMessage(m api.IMessage) error {
 	if p.PeerType == api.PeerTypeJson {
-		event := messages.NewEvent(api.EventMessageIM, m)
+		event := messages.NewEvent(m)
 		data, serialisationError := parser.SerializeEvent(event)
 		if serialisationError != nil {
 			return serialisationError
@@ -60,7 +60,7 @@ func (p *ChatPeer) writeMessage(m api.IMessage) error {
 
 func (p *ChatPeer) writeError(err error) error {
 	if p.PeerType == api.PeerTypeJson {
-		event := messages.NewEvent(api.EventError, messages.NewMessageError(err))
+		event := messages.NewEvent(messages.NewMessageError(err))
 		data, serialisationError := parser.SerializeEvent(event)
 		if serialisationError != nil {
 			return serialisationError
