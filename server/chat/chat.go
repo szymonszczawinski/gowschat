@@ -21,6 +21,11 @@ type (
 	}
 
 	EventHandler func(chat *ChatServer, event messages.Event, p api.IChatPeer) error
+
+	ClientListEvent struct {
+		peer      api.IChatPeer
+		EventType string
+	}
 )
 
 func NewChatServer() *ChatServer {

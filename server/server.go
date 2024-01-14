@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"gowschat/server/api"
 	"gowschat/server/chat"
 	"gowschat/server/chat/peer"
 	"gowschat/server/view"
@@ -58,14 +59,31 @@ var upgrader = websocket.Upgrader{
 }
 
 func ServeWs(chatServer *chat.ChatServer, c *gin.Context) {
-	log.Println("New connection")
+	log.Println("New connection from:", c.Request.RemoteAddr, c.Request.URL)
+
+	// TODO: Add authorisation based on otp parame from connection URL
+
+	peerTypeParam := c.Query(api.WSPeerType)
+	peerType, err := peer.GetPeerType(peerTypeParam)
+	if err != nil {
+		log.Println("ERROR ::", err)
+		c.AbortWithError(http.StatusBadRequest, err)
+		return
+	}
 	// Begin by upgrading the HTTP request
 	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
 	if err != nil {
 		log.Println("ERROR ::", err)
 		return
 	}
-	peer := peer.NewChatPeer(chatServer, conn)
+	log.Println("New WS connection REMOTE:", conn.RemoteAddr())
+	peer, err := peer.NewChatPeer(chatServer, peerType, conn)
+	if err != nil {
+		log.Println("ERROR ::", err)
+		conn.Close()
+		return
+	}
+	log.Println("Peer connected:", peer)
 	chatServer.ConnectPeer(peer)
 	go peer.ReadMessages()
 	go peer.WriteMessages()
@@ -76,6 +94,6 @@ func Home(c *gin.Context) {
 }
 
 func Chat(c *gin.Context) {
-	component := view.Chat()
+	component := view.Chat("szymon")
 	component.Render(c.Request.Context(), c.Writer)
 }

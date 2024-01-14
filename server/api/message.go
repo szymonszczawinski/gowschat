@@ -26,7 +26,8 @@ const (
 type MesageType string
 
 const (
-	MessageIM MesageType = "IM"
+	MessageIM    MesageType = "IM"
+	MessageError MesageType = "error"
 )
 
 type (

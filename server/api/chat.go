@@ -6,13 +6,15 @@ type (
 )
 
 const (
-	PeerTypeJson  = "json"
-	PeerTypeProto = "proto"
-	PeerTypeWeb   = "web"
-	PeerTypeUnset = "unset"
+	WSPeerType               = "peerType"
+	PeerTypeJson    PeerType = "json"
+	PeerTypeProto   PeerType = "proto"
+	PeerTypeWeb     PeerType = "web"
+	PeerTypeUnset   PeerType = "unset"
+	PeerTypeUnknown PeerType = "unnkonw"
 
-	PeerStatusOnline  = "online"
-	PeerStatusOffline = "offline"
+	PeerStatusOnline  PeerStatus = "online"
+	PeerStatusOffline PeerStatus = "offline"
 )
 
 type (
@@ -29,6 +31,8 @@ type (
 		IsOnline() bool
 		ReadMessages()
 		WriteMessages()
+		GetType() PeerType
+		GetUserName() string
 	}
 	IChatUser        interface{}
 	IUserCredentials interface{}

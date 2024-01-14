@@ -1,5 +1,7 @@
 package api
 
+import "errors"
+
 var (
 	ErrOperationNotSupported = NewAppError("operation not suuported")
 	// payload errors
@@ -26,6 +28,10 @@ var (
 	ErrRoomAlreadyJoined      = NewChatError("room already joined")
 	ErrUserAlreadyRegisterred = NewChatError("user already registerred")
 	ErrUserNotRegisterred     = NewChatError("user not registerred")
+
+	ErrorJsonParseNotAMap    = errors.New("JSON element is not a map")
+	ErrorJsonParseError      = errors.New("JSON parse error")
+	ErrorJsonSerlializeError = errors.New("JSON serialize error")
 )
 
 type (

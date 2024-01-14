@@ -8,7 +8,11 @@ type (
 		eventType api.EventType
 	}
 	MessageIM struct {
-		m string
+		message string
+		from    string
+	}
+	MessageError struct {
+		errorMessage string
 	}
 )
 
@@ -16,12 +20,6 @@ func NewEvent(etype api.EventType, m api.IMessage) Event {
 	return Event{
 		eventType: etype,
 		message:   m,
-	}
-}
-
-func NewMessageIM(m string) api.IMessage {
-	return MessageIM{
-		m: m,
 	}
 }
 
@@ -33,6 +31,35 @@ func (e Event) GetMessage() api.IMessage {
 	return e.message
 }
 
+func NewMessageIM(m string, from string) api.IMessage {
+	return MessageIM{
+		message: m,
+		from:    from,
+	}
+}
+
 func (m MessageIM) GetType() api.MesageType {
 	return api.MessageIM
+}
+
+func (m MessageIM) GetFrom() string {
+	return m.from
+}
+
+func (m MessageIM) GetMessage() string {
+	return m.message
+}
+
+func NewMessageError(e error) api.IMessage {
+	return MessageError{
+		errorMessage: e.Error(),
+	}
+}
+
+func (m MessageError) GetType() api.MesageType {
+	return api.MessageError
+}
+
+func (m MessageError) GetErrorMessage() string {
+	return m.errorMessage
 }
