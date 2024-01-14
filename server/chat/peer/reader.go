@@ -2,7 +2,7 @@ package peer
 
 import (
 	"gowschat/server/api"
-	"gowschat/server/chat"
+	"gowschat/server/chat/parser"
 	"log"
 	"time"
 
@@ -19,33 +19,22 @@ func (p *ChatPeer) ReadMessages() {
 	defer func() {
 		p.chat.DisconnectPeer(p)
 	}()
-
-	// Configure Wait time for Pong response, use Current time + pongWait
-	// This has to be done here to set the first initial timer.
-	if err := p.con.SetReadDeadline(time.Now().Add(pongWait)); err != nil {
-		log.Println("ERROR :: SetReadDeadline:", err)
-		return
-	}
-	p.con.SetReadLimit(512)
-	// Configure how to handle Pong responses
-	p.con.SetPongHandler(p.pongHandler)
-
+	setConnctionConfig(p.conn)
 	// Loop Forever
 	for {
-
 		// ReadMessage is used to read the next message in queue
 		// in the connection
-		messageType, payload, err := p.con.ReadMessage()
+		messageType, payload, err := p.conn.ReadMessage()
 		if err != nil {
 			// If Connection is closed, we will Recieve an error here
 			// We only want to log Strange errors, but not simple Disconnection
 			if websocket.IsUnexpectedCloseError(err, websocket.CloseGoingAway, websocket.CloseAbnormalClosure) {
-				log.Printf("ERROR :: reading message: %v", err)
+				log.Println("ERROR :: reading message", err)
 			}
 			p.status = api.PeerStatusOffline
 			break // Break the loop to close conn & Cleanup
 		}
-		event, err := chat.ParseIncomingMessage(p, messageType, payload)
+		event, err := parser.ParseIncomingMessage(p, messageType, payload)
 		if err != nil {
 			log.Println("ERROR :: parseEvent:", err)
 			p.writeError(err)
@@ -59,8 +48,22 @@ func (p *ChatPeer) ReadMessages() {
 }
 
 // pongHandler is used to handle PongMessages for the Client
-func (p *ChatPeer) pongHandler(pongMsg string) error {
-	// Current time + Pong Wait time
-	log.Println("pong", pongMsg)
-	return p.con.SetReadDeadline(time.Now().Add(pongWait))
+func pongHandler(conn *websocket.Conn, pongMsg string) func(string) error {
+	return func(string) error {
+		// Current time + Pong Wait time
+		log.Println("pong", pongMsg)
+		return conn.SetReadDeadline(time.Now().Add(pongWait))
+	}
+}
+
+func setConnctionConfig(conn *websocket.Conn) {
+	// Configure Wait time for Pong response, use Current time + pongWait
+	// This has to be done here to set the first initial timer.
+	if err := conn.SetReadDeadline(time.Now().Add(pongWait)); err != nil {
+		log.Println("ERROR :: SetReadDeadline:", err)
+		return
+	}
+	// Configure how to handle Pong responses
+	conn.SetPongHandler(pongHandler(conn, "OK"))
+	conn.SetReadLimit(512)
 }

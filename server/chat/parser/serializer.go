@@ -1,4 +1,4 @@
-package chat
+package parser
 
 import (
 	"encoding/json"

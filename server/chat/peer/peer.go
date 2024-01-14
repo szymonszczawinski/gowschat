@@ -15,7 +15,7 @@ import (
 type (
 	ChatPeer struct {
 		chat        *chat.ChatServer
-		con         *websocket.Conn
+		conn        *websocket.Conn
 		parser      api.IParser
 		serializer  api.ISerializer
 		outgoing    chan api.IMessage
@@ -30,7 +30,7 @@ type (
 func NewChatPeer(chatServer *chat.ChatServer, peerType api.PeerType, con *websocket.Conn) (api.IChatPeer, error) {
 	return &ChatPeer{
 		chat:        chatServer,
-		con:         con,
+		conn:        con,
 		outgoing:    make(chan api.IMessage),
 		peerId:      uuid.NewString(),
 		PeerType:    peerType,
@@ -41,7 +41,8 @@ func NewChatPeer(chatServer *chat.ChatServer, peerType api.PeerType, con *websoc
 }
 
 func (p *ChatPeer) Close() {
-	p.con.Close()
+	p.status = api.PeerStatusOffline
+	p.conn.Close()
 }
 
 func (p *ChatPeer) IsOnline() bool {
