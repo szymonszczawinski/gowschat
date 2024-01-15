@@ -1,6 +1,7 @@
 package peer
 
 import (
+	"errors"
 	"gowschat/server/api"
 	"gowschat/server/chat/parser"
 	"log"
@@ -37,7 +38,9 @@ func (p *ChatPeer) ReadMessages() {
 		event, err := parser.ParseIncomingMessage(p, messageType, payload)
 		if err != nil {
 			log.Println("ERROR :: parseEvent:", err)
-			p.writeError(err)
+			if !errors.Is(err, api.ErrEmptyMessage) {
+				p.writeError(err)
+			}
 		} else {
 			// Route the Event
 			if err := p.chat.RouteEvent(event, p); err != nil {

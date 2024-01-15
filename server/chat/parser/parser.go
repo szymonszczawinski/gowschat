@@ -56,6 +56,9 @@ func isApiPeer(payloadAsMap map[string]any) bool {
 func createEventFromText(peer api.IChatPeer, payloadAsMap map[string]any) (messages.Event, error) {
 	messageContent := payloadAsMap[api.JSONWebMessage]
 	if stringContent, isString := messageContent.(string); isString {
+		if len(stringContent) == 0 {
+			return messages.Event{}, api.ErrEmptyMessage
+		}
 		return messages.NewEvent(messages.NewMessageIM(stringContent, peer.GetUserName())), nil
 	}
 	return messages.Event{}, errors.Join(api.ErrorJsonParseError, fmt.Errorf("no a string message content %v -> %T", messageContent, messageContent))

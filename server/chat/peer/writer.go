@@ -58,7 +58,8 @@ func (p *ChatPeer) writeMessage(m api.IMessage) error {
 	if p.PeerType == api.PeerTypeWeb {
 		log.Println("writeMessage WEB")
 		if imMessage, isIM := m.(messages.MessageIM); isIM {
-			component := view.Message(imMessage.GetMessage())
+			self := p.GetUserName() == imMessage.GetFrom()
+			component := view.Message(imMessage.GetMessage(), self, imMessage.GetFrom())
 			buffer := &bytes.Buffer{}
 			component.Render(context.Background(), buffer)
 			err := p.conn.WriteMessage(websocket.TextMessage, buffer.Bytes())

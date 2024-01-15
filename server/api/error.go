@@ -13,7 +13,7 @@ var (
 
 	ErrUnsupportedMessageType = NewAppError("unsupported message type")
 	ErrIncorrectMessageTypeIn = NewAppError("message type incorrect for create output type")
-
+	ErrEmptyMessage           = errors.New("empty message")
 	// event errors
 
 	ErrEventNotSupported = NewAppError("this event type is not supported")
