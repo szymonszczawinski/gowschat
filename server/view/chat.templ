@@ -1,15 +1,14 @@
 package view
 
 func getWs(otp string) string {
-return "/chat/ws?peerType=web&otp=" + otp
+return "/gowschat/chat/ws?peerType=web&otp=" + otp
 }
 
 templ Chat(otp string) {
 @MainLayout("Chat") {
-<div id="chatMainPane" class="h-full flex flex-row" hx-ext="ws" ws-connect={ getWs(otp) }>
+<div id="chatMainPane" class="h-full w-full flex flex-row" hx-ext="ws" ws-connect={ getWs(otp) }>
     @contacts()
     @chatPane()
-    @rooms()
 </div>
 }
 }
@@ -23,7 +22,7 @@ templ chatPane() {
         messageForm.reset()
     })
 </script>
-<div id="chatPane" class="flex flex-col basis-1/2 mt-auto border border-gray-300 rounded-lg">
+<div id="chatPane" class="flex flex-col w-full mt-auto border border-gray-300 rounded-lg">
     <div id="chat_room" class="h-[600px] w-full overflow-y-auto rounded-lg flex flex-col"></div>
     <div class="w-full h-6">
         <form id="chat_form" class="flex flex-row" ws-send hx-on::after-request="this.reset()">

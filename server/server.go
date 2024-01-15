@@ -75,11 +75,12 @@ func (s *server) run() {
 }
 
 func (s *server) configureRoutes() {
-	s.router.POST("/login", func(c *gin.Context) {
+	rootRoute := s.router.Group("/gowschat")
+	rootRoute.GET("/", handleHome)
+	rootRoute.POST("/login", func(c *gin.Context) {
 		handleLogin(c, s)
 	})
-	s.router.GET("/", handleHome)
-	restricted := s.router.Group("/chat")
+	restricted := rootRoute.Group("/chat")
 	restricted.GET("/", handleChat)
 	restricted.GET("/ws", s.chat.ServeWs)
 }
@@ -113,5 +114,5 @@ func handleLogin(c *gin.Context, s *server) {
 	}
 	log.Println("login otp", otp.Key)
 	c.SetCookie("otp", otp.Key, 120, "", c.Request.URL.Hostname(), false, false)
-	c.Writer.Header().Add("HX-Redirect", "/chat")
+	c.Writer.Header().Add("HX-Redirect", "/gowschat/chat")
 }
