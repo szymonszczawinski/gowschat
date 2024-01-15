@@ -1,16 +1,19 @@
 package chat
 
 import (
+	"context"
 	"gowschat/server/api"
-	"gowschat/server/chat/messages"
+	"gowschat/server/chat/auth"
 	"gowschat/server/chat/room"
 	"gowschat/server/chat/user"
 	"log"
 	"sync"
+	"time"
 )
 
 type (
 	ChatServer struct {
+		authenticator  *auth.Authenticator
 		handlers       map[api.EventType]EventHandler
 		connectedPeers map[api.IChatPeer]bool
 		chatUsers      map[api.IUserCredentials]api.IChatUser
@@ -19,8 +22,7 @@ type (
 		muUsers        sync.RWMutex
 		muRooms        sync.RWMutex
 	}
-
-	EventHandler func(chat *ChatServer, event messages.Event, p api.IChatPeer) error
+	EventHandler func(chat *ChatServer, event api.IEvent, p api.IChatPeer) error
 
 	ClientListEvent struct {
 		peer      api.IChatPeer
@@ -28,12 +30,13 @@ type (
 	}
 )
 
-func NewChatServer() *ChatServer {
+func NewChatServer(mainContext context.Context) *ChatServer {
 	server := &ChatServer{
 		connectedPeers: map[api.IChatPeer]bool{},
 		chatUsers:      map[api.IUserCredentials]api.IChatUser{},
 		handlers:       map[api.EventType]EventHandler{},
 		rooms:          map[*room.ChatRoom]bool{},
+		authenticator:  auth.NewAuthenticator(mainContext, 5*time.Second),
 	}
 	server.setupHandlers()
 	return server
@@ -66,7 +69,7 @@ func (chat *ChatServer) RegisterPeer(p api.IChatPeer, email, password string) er
 	return nil
 }
 
-func (chat *ChatServer) RouteEvent(e messages.Event, p api.IChatPeer) error {
+func (chat *ChatServer) RouteEvent(e api.IEvent, p api.IChatPeer) error {
 	if handler, ok := chat.handlers[e.GetType()]; ok {
 		// if p.isRegisterred() || e.GetType() == api.EventChatRegister {
 		if err := handler(chat, e, p); err != nil {

@@ -11,7 +11,7 @@ import "io"
 import "bytes"
 
 func getWs(otp string) string {
-	return "/ws/chat?peerType=web&otp=" + otp
+	return "/chat/ws?peerType=web&otp=" + otp
 }
 
 func Chat(otp string) templ.Component {
@@ -106,7 +106,7 @@ func chatPane() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</script><div id=\"chatPane\" class=\"flex flex-col basis-1/2 mt-auto border border-gray-300 rounded-lg\"><div id=\"chat_room\" class=\"h-[600px] w-full overflow-y-auto rounded-lg\"></div><div class=\"w-full h-6\"><form id=\"chat_form\" class=\"flex flex-row\" ws-send hx-on::after-request=\"this.reset()\"><input name=\"chat_message\" class=\"h-6 border border-gray-300 rounded-lg grow\" hx-swap-oob=\"true\"> <button type=\"submit\" class=\"h-6 w-32 rounded-lg bg-blue-300\">")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</script><div id=\"chatPane\" class=\"flex flex-col basis-1/2 mt-auto border border-gray-300 rounded-lg\"><div id=\"chat_room\" class=\"h-[600px] w-full overflow-y-auto rounded-lg flex flex-col\"></div><div class=\"w-full h-6\"><form id=\"chat_form\" class=\"flex flex-row\" ws-send hx-on::after-request=\"this.reset()\"><input name=\"chat_message\" class=\"h-6 border border-gray-300 rounded-lg grow px-1\" hx-swap-oob=\"true\"> <button type=\"submit\" class=\"h-6 w-32 rounded-lg bg-blue-300\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -210,64 +210,64 @@ func Message(msg string, self bool, author string) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if self {
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<p class=\"text-blcka text-right\">")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"border border-gray-300 rounded-lg text-right text-black\"><p class=\"font-semibold px-1\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var11 string
 			templ_7745c5c3_Var11, templ_7745c5c3_Err = templ.JoinStringErrs(author)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `server/view/chat.templ`, Line: 51, Col: 45}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `server/view/chat.templ`, Line: 52, Col: 46}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var11))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</p><p class=\"text-red-500 text-right\">")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</p><p class=\"inline-block px-1\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var12 string
 			templ_7745c5c3_Var12, templ_7745c5c3_Err = templ.JoinStringErrs(msg)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `server/view/chat.templ`, Line: 52, Col: 44}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `server/view/chat.templ`, Line: 53, Col: 42}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var12))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</p>")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</p></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<p class=\"text-black text-left\">")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"border border-gray-300 rounded-lg text-black text-left\"><p class=\"font-semibold px-1\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var13 string
 			templ_7745c5c3_Var13, templ_7745c5c3_Err = templ.JoinStringErrs(author)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `server/view/chat.templ`, Line: 54, Col: 44}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `server/view/chat.templ`, Line: 57, Col: 46}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var13))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</p><p class=\"text-blue-500 text-left\">")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</p><p class=\"inline-block px-1\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
 			var templ_7745c5c3_Var14 string
 			templ_7745c5c3_Var14, templ_7745c5c3_Err = templ.JoinStringErrs(msg)
 			if templ_7745c5c3_Err != nil {
-				return templ.Error{Err: templ_7745c5c3_Err, FileName: `server/view/chat.templ`, Line: 55, Col: 44}
+				return templ.Error{Err: templ_7745c5c3_Err, FileName: `server/view/chat.templ`, Line: 58, Col: 42}
 			}
 			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString(templ.EscapeString(templ_7745c5c3_Var14))
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</p>")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</p></div>")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}

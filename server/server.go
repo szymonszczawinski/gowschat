@@ -2,9 +2,7 @@ package server
 
 import (
 	"context"
-	"gowschat/server/api"
 	"gowschat/server/chat"
-	"gowschat/server/chat/peer"
 	"gowschat/server/view"
 	"log"
 	"net/http"
@@ -14,23 +12,41 @@ import (
 	"time"
 
 	"github.com/gin-gonic/gin"
-	"github.com/gorilla/websocket"
 )
 
-func Run() {
-	chatServer := chat.NewChatServer()
-	// go chatServer.run()
-	router := gin.Default()
+func RunApp() {
+	mainContext := context.Background()
+	ctx, cancel := context.WithCancel(mainContext)
+	defer func() {
+		log.Println("Cancel 1")
+		cancel()
+		time.Sleep(1 * time.Second)
+		log.Println("DONE")
+	}()
+	newServer(ctx).run()
+	log.Println("exiting")
+}
 
-	router.GET("/chat", Chat)
-	router.GET("/ws/chat", func(ctx *gin.Context) {
-		ServeWs(chatServer, ctx)
-	})
-	router.GET("/", Home)
+type server struct {
+	ctx    context.Context
+	chat   *chat.ChatServer
+	router *gin.Engine
+}
+
+func newServer(ctx context.Context) *server {
+	return &server{
+		ctx:    ctx,
+		chat:   chat.NewChatServer(ctx),
+		router: gin.Default(),
+	}
+}
+
+func (s *server) run() {
+	s.configureRoutes()
 
 	server := http.Server{
 		Addr:    ":3000",
-		Handler: router,
+		Handler: s.router,
 	}
 
 	go func() {
@@ -44,56 +60,58 @@ func Run() {
 	<-quit
 	log.Println("Shutdown Server ...")
 
-	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
-	defer cancel()
+	ctx, cancel := context.WithTimeout(s.ctx, 2*time.Second)
+	defer func() {
+		log.Println("CANCEL 2")
+		cancel()
+	}()
 	if err := server.Shutdown(ctx); err != nil {
 		log.Fatal("Server Shutdown: ", err)
 	}
+	<-ctx.Done()
+	log.Println("timeout of 5 seconds.")
+
 	log.Println("Server exiting")
 }
 
-var upgrader = websocket.Upgrader{
-	ReadBufferSize:  1024,
-	WriteBufferSize: 1024,
-	CheckOrigin:     func(r *http.Request) bool { return true },
+func (s *server) configureRoutes() {
+	s.router.POST("/login", func(c *gin.Context) {
+		handleLogin(c, s)
+	})
+	s.router.GET("/", handleHome)
+	restricted := s.router.Group("/chat")
+	restricted.GET("/", handleChat)
+	restricted.GET("/ws", s.chat.ServeWs)
 }
 
-func ServeWs(chatServer *chat.ChatServer, c *gin.Context) {
-	log.Println("New connection from:", c.Request.RemoteAddr, c.Request.URL)
-
-	// TODO: Add authorisation based on otp parame from connection URL
-
-	peerTypeParam := c.Query(api.WSPeerType)
-	peerType, err := peer.GetPeerType(peerTypeParam)
-	if err != nil {
-		log.Println("ERROR ::", err)
-		c.AbortWithError(http.StatusBadRequest, err)
-		return
-	}
-	// Begin by upgrading the HTTP request
-	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
-	if err != nil {
-		log.Println("ERROR ::", err)
-		return
-	}
-	log.Println("New WS connection REMOTE:", conn.RemoteAddr())
-	peer, err := peer.NewChatPeer(chatServer, peerType, conn)
-	if err != nil {
-		log.Println("ERROR ::", err)
-		conn.Close()
-		return
-	}
-	log.Println("Peer connected:", peer)
-	chatServer.ConnectPeer(peer)
-	go peer.ReadMessages()
-	go peer.WriteMessages()
-}
-
-func Home(c *gin.Context) {
+func handleHome(c *gin.Context) {
 	view.Login().Render(c.Request.Context(), c.Writer)
 }
 
-func Chat(c *gin.Context) {
-	component := view.Chat("szymon")
+func handleChat(c *gin.Context) {
+	otp, err := c.Cookie("otp")
+	if err != nil {
+		view.Error(err.Error()).Render(c.Request.Context(), c.Writer)
+		return
+	}
+	log.Println("handleChat ::", otp)
+	component := view.Chat(otp)
 	component.Render(c.Request.Context(), c.Writer)
+}
+
+func handleLogin(c *gin.Context, s *server) {
+	log.Println("login submit")
+	password := c.PostForm("username")
+	username := c.PostForm("password")
+
+	log.Println("login user", username, "pass", password)
+	otp, err := s.chat.Login(username, password)
+	if err != nil {
+		log.Println("login error", err)
+		view.LoginError(err.Error()).Render(c.Request.Context(), c.Writer)
+		return
+	}
+	log.Println("login otp", otp.Key)
+	c.SetCookie("otp", otp.Key, 120, "", c.Request.URL.Hostname(), false, false)
+	c.Writer.Header().Add("HX-Redirect", "/chat")
 }

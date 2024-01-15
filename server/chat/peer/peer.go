@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"gowschat/server/api"
-	"gowschat/server/chat"
 	"gowschat/server/chat/room"
+	"gowschat/server/chat/user"
 	"log"
 
 	"github.com/google/uuid"
@@ -14,8 +14,9 @@ import (
 
 type (
 	ChatPeer struct {
-		chat        *chat.ChatServer
+		chat        api.IChatServer
 		conn        *websocket.Conn
+		u           user.ChatUser
 		parser      api.IParser
 		serializer  api.ISerializer
 		outgoing    chan api.IMessage
@@ -27,7 +28,7 @@ type (
 	}
 )
 
-func NewChatPeer(chatServer *chat.ChatServer, peerType api.PeerType, con *websocket.Conn) (api.IChatPeer, error) {
+func NewChatPeer(chatServer api.IChatServer, peerType api.PeerType, con *websocket.Conn, u user.ChatUser) (api.IChatPeer, error) {
 	return &ChatPeer{
 		chat:        chatServer,
 		conn:        con,
@@ -37,6 +38,7 @@ func NewChatPeer(chatServer *chat.ChatServer, peerType api.PeerType, con *websoc
 		rooms:       map[*room.ChatRoom]bool{},
 		status:      api.PeerStatusOnline,
 		registerred: false,
+		u:           u,
 	}, nil
 }
 
@@ -62,7 +64,7 @@ func (p *ChatPeer) GetType() api.PeerType {
 }
 
 func (p *ChatPeer) GetUserName() string {
-	return "username"
+	return p.u.GetUsername()
 }
 
 func GetPeerType(peerTypeString string) (api.PeerType, error) {

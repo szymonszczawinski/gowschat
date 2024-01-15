@@ -37,10 +37,8 @@ var MessageTypeToEventType = map[MesageType]EventType{
 
 type (
 	IEvent interface {
-		GetType() string
-		GetPayload() IMessageSerializable
-		Serialize() ([]byte, error)
-		ParseMessage() (IMessage, error)
+		GetType() EventType
+		GetMessage() IMessage
 	}
 	IMessage interface {
 		GetType() MesageType

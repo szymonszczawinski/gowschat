@@ -2,7 +2,6 @@ package chat
 
 import (
 	"gowschat/server/api"
-	"gowschat/server/chat/messages"
 )
 
 // import (
@@ -27,7 +26,7 @@ import (
 //		}
 //		return nil
 //	}
-func HandlerMessageIM(chat *ChatServer, event messages.Event, p api.IChatPeer) error {
+func HandlerMessageIM(chat *ChatServer, event api.IEvent, p api.IChatPeer) error {
 	// Broadcast to all other Clients
 	chat.BroadcastMessage(event.GetMessage())
 	return nil

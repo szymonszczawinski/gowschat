@@ -17,6 +17,10 @@ func NewUserCredentials(email, password string) UserCredentials {
 	}
 }
 
+func (uc UserCredentials) GetUsername() string {
+	return uc.email
+}
+
 func NewChatUser(c UserCredentials) *ChatUser {
 	return &ChatUser{
 		UserCredentials: c,
