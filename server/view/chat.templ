@@ -18,15 +18,16 @@ templ chatPane() {
 <script>
     document.addEventListener("htmx:wsAfterMessage", e => {
         const messagesDiv = document.getElementById("chat_room");
-        console.log(messagesDiv)
         messagesDiv.scrollTop = messagesDiv.scrollHeight;
+        const messageForm = document.getElementById("chat_form");
+        messageForm.reset()
     })
 </script>
 <div id="chatPane" class="flex flex-col basis-1/2 mt-auto bg-gray-300 border border-gray-300 rounded-lg">
     <div id="chat_room" class="h-[600px] w-full bg-gray-400 overflow-y-auto rounded-lg"></div>
     <div class="w-full h-6 bg-gray-400 rounded-lg">
-        <form id="form" class="flex flex-row" ws-send>
-            <input name="chat_message" class="h-6 rounded-lg grow" />
+        <form id="chat_form" class="flex flex-row" ws-send hx-on::after-request="this.reset()">
+            <input name="chat_message" class="h-6 rounded-lg grow" hx-swap-oob="true" />
             <button type="submit" class="h-6 w-32 rounded-lg bg-blue-300">
                 Send
             </button>
