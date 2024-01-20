@@ -9,7 +9,7 @@ templ MainLayout(title string) {
 
 <body class="flex flex-col min-h-screen">
     @header(title)
-    <div id="content" class="flex-1">
+    <div id="content" class="flex-1 h-[calc(100%-8rem)] ">
         { children... }
     </div>
     @footer()

@@ -102,7 +102,7 @@ func chatPane() templ.Component {
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
-		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</script><div id=\"chatPane\" class=\"flex flex-col w-full mt-auto border border-gray-300 rounded-lg\"><div id=\"chat_room\" class=\"h-[600px] w-full overflow-y-auto rounded-lg flex flex-col\"></div><div class=\"w-full h-6\"><form id=\"chat_form\" class=\"flex flex-row\" ws-send hx-on::after-request=\"this.reset()\"><input name=\"chat_message\" class=\"h-6 border border-gray-300 rounded-lg grow px-1\" hx-swap-oob=\"true\"> <button type=\"submit\" class=\"h-6 w-32 rounded-lg bg-blue-300\">")
+		_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("</script><div id=\"chatPane\" class=\"flex h-full flex-col w-full border border-gray-300 rounded-lg\"><div id=\"chat_room\" class=\"h-full w-full overflow-y-auto mt-auto rounded-lg flex flex-col\"></div><div class=\"w-full h-6\"><form id=\"chat_form\" class=\"flex flex-row\" ws-send hx-on::after-request=\"this.reset()\"><input name=\"chat_message\" class=\"h-6 border border-gray-300 rounded-lg grow px-1\" hx-swap-oob=\"true\"> <button type=\"submit\" class=\"h-6 w-32 rounded-lg bg-blue-300\">")
 		if templ_7745c5c3_Err != nil {
 			return templ_7745c5c3_Err
 		}
@@ -206,7 +206,7 @@ func Message(msg string, self bool, author string) templ.Component {
 			return templ_7745c5c3_Err
 		}
 		if self {
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"border border-gray-300 rounded-lg text-right text-black\"><p class=\"font-semibold px-1\">")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"border border-gray-300 rounded-lg text-right text-black mt-auto\"><p class=\"font-semibold px-1\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
@@ -237,7 +237,7 @@ func Message(msg string, self bool, author string) templ.Component {
 				return templ_7745c5c3_Err
 			}
 		} else {
-			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"border border-gray-300 rounded-lg text-black text-left\"><p class=\"font-semibold px-1\">")
+			_, templ_7745c5c3_Err = templ_7745c5c3_Buffer.WriteString("<div class=\"border border-gray-300 rounded-lg text-black text-left mt-auto\"><p class=\"font-semibold px-1\">")
 			if templ_7745c5c3_Err != nil {
 				return templ_7745c5c3_Err
 			}
