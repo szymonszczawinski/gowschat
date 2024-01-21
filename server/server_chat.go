@@ -18,11 +18,10 @@ var upgrader = websocket.Upgrader{
 
 func serveWs(c *gin.Context, s *server) {
 	log.Println("New connection from:", c.Request.RemoteAddr, c.Request.URL)
-	otp := c.Query("otp")
-	// TODO: Add authorisation based on otp parame from connection URL
+	otp := c.Query(OTP_KEY)
 	if otp == "" {
 		// Tell the user its not authorized
-		log.Println("ServeWs otp is empty")
+		log.Println("ERROR :: otp is empty")
 		c.Writer.WriteHeader(http.StatusUnauthorized)
 		return
 	}
@@ -30,7 +29,7 @@ func serveWs(c *gin.Context, s *server) {
 	// Verify OTP is existing
 	ok, user := s.authenticator.VerifyOTP(otp)
 	if !ok {
-		log.Println("Verify OTP FAILED")
+		log.Println("ERROR :: Verify OTP FAILED")
 		c.Writer.WriteHeader(http.StatusUnauthorized)
 		return
 	}

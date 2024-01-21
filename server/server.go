@@ -12,7 +12,14 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/gin-contrib/sessions"
+	"github.com/gin-contrib/sessions/cookie"
 	"github.com/gin-gonic/gin"
+)
+
+const (
+	// TODO: replace with Env variable
+	MySecret = "mysecret"
 )
 
 func RunApp() {
@@ -40,8 +47,23 @@ func newServer(ctx context.Context) *server {
 		ctx:           ctx,
 		chat:          chat.NewChatServer(),
 		authenticator: auth.NewAuthenticator(ctx, 5*time.Second),
-		router:        gin.Default(),
+		router:        createGinRouter(),
 	}
+}
+
+func createGinRouter() *gin.Engine {
+	engine := gin.Default()
+	// cookieOptions := sessions.Options{
+	// 	Path:     "/",
+	// 	HttpOnly: true,
+	// 	SameSite: http.SameSiteLaxMode,
+	// 	Domain:   "gowschat",
+	// 	MaxAge:   60 * 5,
+	// }
+	cookieStore := cookie.NewStore([]byte(os.Getenv(MySecret)))
+	// cookieStore.Options(cookieOptions)
+	engine.Use(sessions.Sessions("mysession", cookieStore))
+	return engine
 }
 
 func (s *server) run() {
@@ -81,10 +103,12 @@ func (s *server) run() {
 func (s *server) configureRoutes() {
 	rootRoute := s.router.Group("/gowschat")
 	rootRoute.GET("/", handleHome)
+	rootRoute.GET("/login", handleLogin)
 	rootRoute.POST("/login", func(c *gin.Context) {
-		handleLogin(c, s)
+		handleLoginSubmit(c, s)
 	})
 	restricted := rootRoute.Group("/chat")
+	restricted.Use(sessionAuth)
 	restricted.GET("/", handleChat)
 	restricted.GET("/ws", func(ctx *gin.Context) {
 		serveWs(ctx, s)
@@ -92,16 +116,22 @@ func (s *server) configureRoutes() {
 }
 
 func handleHome(c *gin.Context) {
+	view.Home().Render(c.Request.Context(), c.Writer)
+}
+
+func handleLogin(c *gin.Context) {
 	view.Login().Render(c.Request.Context(), c.Writer)
 }
 
 func handleChat(c *gin.Context) {
-	otp, err := c.Cookie(OTP_KEY)
-	if err != nil {
-		view.Error(err.Error()).Render(c.Request.Context(), c.Writer)
+	session := sessions.Default(c)
+	otp := session.Get(OTP_KEY)
+	if otp == nil {
+		log.Println("ERROR: no OTP")
+		view.Error("No OTP found").Render(c.Request.Context(), c.Writer)
 		return
 	}
-	log.Println("handleChat ::", otp)
-	component := view.Chat(otp)
+	otpString, _ := otp.(string)
+	component := view.Chat(otpString)
 	component.Render(c.Request.Context(), c.Writer)
 }

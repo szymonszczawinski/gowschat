@@ -16,7 +16,6 @@ var (
 )
 
 func (p *ChatPeer) ReadMessages() {
-	log.Println("ReadMessages")
 	defer func() {
 		p.chat.DisconnectPeer(p)
 	}()

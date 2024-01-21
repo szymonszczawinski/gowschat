@@ -6,7 +6,6 @@ import (
 	"fmt"
 	"gowschat/server/api"
 	"gowschat/server/chat/messages"
-	"log"
 
 	"github.com/gorilla/websocket"
 )
@@ -23,7 +22,6 @@ func ParseIncomingMessage(peer api.IChatPeer, messageType int, payload []byte) (
 }
 
 func parseTextMessage(peer api.IChatPeer, payload []byte) (messages.Event, error) {
-	log.Println("parseTextMessage:", string(payload))
 	var payloadAsMap map[string]any
 	json.Unmarshal(payload, &payloadAsMap)
 	switch peer.GetType() {

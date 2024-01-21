@@ -28,7 +28,6 @@ func (p *ChatPeer) WriteMessages() {
 				}
 				return
 			}
-			log.Println("MESSAGE OUT ::", message)
 			p.writeMessage(message)
 
 		case <-ticker.C:
@@ -56,7 +55,6 @@ func (p *ChatPeer) writeMessage(m api.IMessage) error {
 		return p.conn.WriteMessage(websocket.TextMessage, data)
 	}
 	if p.PeerType == api.PeerTypeWeb {
-		log.Println("writeMessage WEB")
 		if imMessage, isIM := m.(messages.MessageIM); isIM {
 			self := p.GetUserName() == imMessage.GetFrom()
 			component := view.Message(imMessage.GetMessage(), self, imMessage.GetFrom())
@@ -64,7 +62,7 @@ func (p *ChatPeer) writeMessage(m api.IMessage) error {
 			component.Render(context.Background(), buffer)
 			err := p.conn.WriteMessage(websocket.TextMessage, buffer.Bytes())
 			if err != nil {
-				log.Println("writeMessage error WEB", err)
+				log.Println("ERROR :: writeMessage", err)
 			}
 		}
 	}

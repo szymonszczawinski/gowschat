@@ -1,0 +1,21 @@
+package view
+
+templ Home() {
+@MainLayout("GO Ws CHat") {
+@home()
+}
+}
+
+templ home() {
+<div>
+    <p>Welcome to GO Ws Chat Application</p>
+    <a href="/gowschat/login"
+        class="text-gray-500 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">
+        Login
+    </a>
+    <a href="/gowschat/register"
+        class="text-gray-500 hover:bg-gray-700 hover:text-white rounded-md px-3 py-2 text-sm font-medium">
+        Register
+    </a>
+</div>
+}

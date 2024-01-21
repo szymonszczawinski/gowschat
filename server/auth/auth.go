@@ -37,6 +37,7 @@ func NewAuthenticator(ctx context.Context, retentionPeriod time.Duration) *Authe
 func (a *Authenticator) Login(username, password string) (OTP, error) {
 	if pass, userExist := users[username]; userExist && pass == password {
 		otp := a.NewOTP(username, password)
+		// TODO: get user from DB
 		a.loggedInUsers[username] = *user.NewChatUser(user.NewUserCredentials(username, password))
 		return otp, nil
 	}

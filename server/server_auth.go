@@ -22,7 +22,7 @@ var (
 	ErrorFailedSaveSession   = errors.New("faield to save session")
 )
 
-func handleLogin(c *gin.Context, s *server) {
+func handleLoginSubmit(c *gin.Context, s *server) {
 	log.Println("login submit")
 	password := c.PostForm("username")
 	username := c.PostForm("password")
@@ -35,8 +35,10 @@ func handleLogin(c *gin.Context, s *server) {
 		return
 	}
 	userSessionToken := username + "." + uuid.NewString()
-	c.SetCookie(USER_SESSION_KEY, userSessionToken, 120, "", c.Request.URL.Hostname(), false, true)
-	c.SetCookie(OTP_KEY, otp.Key, 120, "", c.Request.URL.Hostname(), false, false)
+	session := sessions.Default(c)
+	session.Set(USER_SESSION_KEY, userSessionToken)
+	session.Set(OTP_KEY, otp.Key)
+	session.Save()
 	c.Writer.Header().Add("HX-Redirect", "/gowschat/chat")
 }
 
@@ -62,4 +64,19 @@ func handleLogout(c *gin.Context, s *server) {
 }
 
 func handleRegister(c *gin.Context) {
+}
+
+func sessionAuth(c *gin.Context) {
+	session := sessions.Default(c)
+
+	if session != nil {
+		if session.Get(USER_SESSION_KEY) == nil {
+			log.Println("ERROR :: no user session key")
+			c.Redirect(http.StatusFound, "/gowschat/login")
+			c.Abort()
+			return
+		}
+	}
+
+	c.Next()
 }
