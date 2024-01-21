@@ -21,7 +21,6 @@ type (
 	IChatServer interface {
 		ConnectPeer(p IChatPeer)
 		DisconnectPeer(p IChatPeer)
-		RegisterPeer(p IChatPeer, email, password string) error
 		RouteEvent(e IEvent, p IChatPeer) error
 		BroadcastMessage(m IMessage) error
 	}

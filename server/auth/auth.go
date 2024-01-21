@@ -3,7 +3,7 @@ package auth
 import (
 	"context"
 	"errors"
-	"gowschat/server/chat/user"
+	"gowschat/server/auth/user"
 	"log"
 	"time"
 
@@ -41,6 +41,11 @@ func (a *Authenticator) Login(username, password string) (OTP, error) {
 		return otp, nil
 	}
 	return OTP{}, errors.New("login failed")
+}
+
+func (a *Authenticator) Logout(username string) error {
+	delete(a.loggedInUsers, username)
+	return nil
 }
 
 // NewOTP creates and adds a new otp to the map

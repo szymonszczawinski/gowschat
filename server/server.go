@@ -2,6 +2,7 @@ package server
 
 import (
 	"context"
+	"gowschat/server/auth"
 	"gowschat/server/chat"
 	"gowschat/server/view"
 	"log"
@@ -28,20 +29,23 @@ func RunApp() {
 }
 
 type server struct {
-	ctx    context.Context
-	chat   *chat.ChatServer
-	router *gin.Engine
+	ctx           context.Context
+	chat          *chat.ChatServer
+	authenticator *auth.Authenticator
+	router        *gin.Engine
 }
 
 func newServer(ctx context.Context) *server {
 	return &server{
-		ctx:    ctx,
-		chat:   chat.NewChatServer(ctx),
-		router: gin.Default(),
+		ctx:           ctx,
+		chat:          chat.NewChatServer(),
+		authenticator: auth.NewAuthenticator(ctx, 5*time.Second),
+		router:        gin.Default(),
 	}
 }
 
 func (s *server) run() {
+	go s.chat.Run()
 	s.configureRoutes()
 
 	server := http.Server{
@@ -82,7 +86,9 @@ func (s *server) configureRoutes() {
 	})
 	restricted := rootRoute.Group("/chat")
 	restricted.GET("/", handleChat)
-	restricted.GET("/ws", s.chat.ServeWs)
+	restricted.GET("/ws", func(ctx *gin.Context) {
+		serveWs(ctx, s)
+	})
 }
 
 func handleHome(c *gin.Context) {
@@ -90,7 +96,7 @@ func handleHome(c *gin.Context) {
 }
 
 func handleChat(c *gin.Context) {
-	otp, err := c.Cookie("otp")
+	otp, err := c.Cookie(OTP_KEY)
 	if err != nil {
 		view.Error(err.Error()).Render(c.Request.Context(), c.Writer)
 		return
@@ -98,21 +104,4 @@ func handleChat(c *gin.Context) {
 	log.Println("handleChat ::", otp)
 	component := view.Chat(otp)
 	component.Render(c.Request.Context(), c.Writer)
-}
-
-func handleLogin(c *gin.Context, s *server) {
-	log.Println("login submit")
-	password := c.PostForm("username")
-	username := c.PostForm("password")
-
-	log.Println("login user", username, "pass", password)
-	otp, err := s.chat.Login(username, password)
-	if err != nil {
-		log.Println("login error", err)
-		view.LoginError(err.Error()).Render(c.Request.Context(), c.Writer)
-		return
-	}
-	log.Println("login otp", otp.Key)
-	c.SetCookie("otp", otp.Key, 120, "", c.Request.URL.Hostname(), false, false)
-	c.Writer.Header().Add("HX-Redirect", "/gowschat/chat")
 }

@@ -4,8 +4,8 @@ import (
 	"errors"
 	"fmt"
 	"gowschat/server/api"
+	"gowschat/server/auth/user"
 	"gowschat/server/chat/room"
-	"gowschat/server/chat/user"
 	"log"
 
 	"github.com/google/uuid"

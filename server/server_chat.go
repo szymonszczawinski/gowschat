@@ -1,8 +1,7 @@
-package chat
+package server
 
 import (
 	"gowschat/server/api"
-	"gowschat/server/chat/auth"
 	"gowschat/server/chat/peer"
 	"log"
 	"net/http"
@@ -17,13 +16,7 @@ var upgrader = websocket.Upgrader{
 	CheckOrigin:     func(r *http.Request) bool { return true },
 }
 
-func (cs *ChatServer) Login(username, password string) (auth.OTP, error) {
-	otp, err := cs.authenticator.Login(username, password)
-
-	return otp, err
-}
-
-func (cs *ChatServer) ServeWs(c *gin.Context) {
+func serveWs(c *gin.Context, s *server) {
 	log.Println("New connection from:", c.Request.RemoteAddr, c.Request.URL)
 	otp := c.Query("otp")
 	// TODO: Add authorisation based on otp parame from connection URL
@@ -35,7 +28,7 @@ func (cs *ChatServer) ServeWs(c *gin.Context) {
 	}
 
 	// Verify OTP is existing
-	ok, u := cs.authenticator.VerifyOTP(otp)
+	ok, user := s.authenticator.VerifyOTP(otp)
 	if !ok {
 		log.Println("Verify OTP FAILED")
 		c.Writer.WriteHeader(http.StatusUnauthorized)
@@ -55,14 +48,5 @@ func (cs *ChatServer) ServeWs(c *gin.Context) {
 		return
 	}
 	log.Println("New WS connection REMOTE:", conn.RemoteAddr())
-	peer, err := peer.NewChatPeer(cs, peerType, conn, u)
-	if err != nil {
-		log.Println("ERROR ::", err)
-		conn.Close()
-		return
-	}
-	log.Println("Peer connected:", peer)
-	cs.ConnectPeer(peer)
-	go peer.ReadMessages()
-	go peer.WriteMessages()
+	s.chat.NewPeer(conn, peerType, user)
 }

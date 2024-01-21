@@ -1,26 +1,22 @@
 package chat
 
 import (
-	"context"
 	"gowschat/server/api"
-	"gowschat/server/chat/auth"
+	"gowschat/server/auth/user"
+	"gowschat/server/chat/peer"
 	"gowschat/server/chat/room"
-	"gowschat/server/chat/user"
 	"log"
-	"sync"
-	"time"
+
+	"github.com/gorilla/websocket"
 )
 
 type (
 	ChatServer struct {
-		authenticator  *auth.Authenticator
 		handlers       map[api.EventType]EventHandler
 		connectedPeers map[api.IChatPeer]bool
-		chatUsers      map[api.IUserCredentials]api.IChatUser
 		rooms          map[*room.ChatRoom]bool
-		muPeers        sync.RWMutex
-		muUsers        sync.RWMutex
-		muRooms        sync.RWMutex
+		register       chan api.IChatPeer
+		unregister     chan api.IChatPeer
 	}
 	EventHandler func(chat *ChatServer, event api.IEvent, p api.IChatPeer) error
 
@@ -30,43 +26,51 @@ type (
 	}
 )
 
-func NewChatServer(mainContext context.Context) *ChatServer {
+func NewChatServer() *ChatServer {
 	server := &ChatServer{
 		connectedPeers: map[api.IChatPeer]bool{},
-		chatUsers:      map[api.IUserCredentials]api.IChatUser{},
 		handlers:       map[api.EventType]EventHandler{},
 		rooms:          map[*room.ChatRoom]bool{},
-		authenticator:  auth.NewAuthenticator(mainContext, 5*time.Second),
+		register:       make(chan api.IChatPeer),
+		unregister:     make(chan api.IChatPeer),
 	}
 	server.setupHandlers()
 	return server
 }
 
+// Run our websocket server, accepting various requests
+func (chat *ChatServer) Run() {
+	for {
+		select {
+
+		case client := <-chat.register:
+			chat.registerPeer(client)
+
+		case client := <-chat.unregister:
+			chat.unregisterPeer(client)
+		}
+	}
+}
+
+func (chat *ChatServer) NewPeer(conn *websocket.Conn, peerType api.PeerType, user user.ChatUser) {
+	peer, err := peer.NewChatPeer(chat, peerType, conn, user)
+	if err != nil {
+		log.Println("ERROR ::", err)
+		conn.Close()
+		return
+	}
+	log.Println("Peer connected:", peer)
+	chat.ConnectPeer(peer)
+	go peer.ReadMessages()
+	go peer.WriteMessages()
+}
+
 func (chat *ChatServer) ConnectPeer(peer api.IChatPeer) {
-	chat.muPeers.Lock()
-	defer chat.muPeers.Unlock()
-	chat.connectedPeers[peer] = true
+	chat.register <- peer
 }
 
 func (chat *ChatServer) DisconnectPeer(peer api.IChatPeer) {
-	chat.muPeers.Lock()
-	defer chat.muPeers.Unlock()
-	if _, exist := chat.connectedPeers[peer]; exist {
-		peer.Close()
-		delete(chat.connectedPeers, peer)
-	}
-}
-
-func (chat *ChatServer) RegisterPeer(p api.IChatPeer, email, password string) error {
-	chat.muUsers.Lock()
-	defer chat.muUsers.Unlock()
-	credentials := user.NewUserCredentials(email, password)
-	if _, exist := chat.chatUsers[credentials]; exist {
-		return api.ErrUserAlreadyRegisterred
-	}
-	chatUser := user.NewChatUser(credentials)
-	chat.chatUsers[credentials] = chatUser
-	return nil
+	chat.unregister <- peer
 }
 
 func (chat *ChatServer) RouteEvent(e api.IEvent, p api.IChatPeer) error {
@@ -94,6 +98,17 @@ func (chat *ChatServer) BroadcastMessage(m api.IMessage) error {
 		}
 	}
 	return nil
+}
+
+func (chat *ChatServer) registerPeer(peer api.IChatPeer) {
+	chat.connectedPeers[peer] = true
+}
+
+func (chat *ChatServer) unregisterPeer(peer api.IChatPeer) {
+	if _, exist := chat.connectedPeers[peer]; exist {
+		peer.Close()
+		delete(chat.connectedPeers, peer)
+	}
 }
 
 //	func (chat *ChatServer) createRoom(name string, creator api.IChatPeer) (*room.ChatRoom, error) {
