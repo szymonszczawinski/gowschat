@@ -23,7 +23,10 @@ templ chatPane() {
     })
 </script>
 <div id="chatPane" class="flex h-full flex-col w-full border border-gray-300 rounded-lg">
-    <div id="chat_room" class="h-full w-full overflow-y-auto mt-auto rounded-lg flex flex-col"></div>
+    <div id="chatinfo" class="h-[50px] border border-black shrink-0">
+        Chact info
+    </div>
+    <div id="chat_room" class="w-full overflow-y-auto rounded-lg flex flex-col mt-auto"></div>
     <div class="w-full h-6">
         <form id="chat_form" class="flex flex-row" ws-send hx-on::after-request="this.reset()">
             <input name="chat_message" class="h-6 border border-gray-300 rounded-lg grow px-1" hx-swap-oob="true" />
@@ -48,7 +51,7 @@ templ rooms() {
 templ Message(msg string, self bool, author string) {
 <div hx-swap-oob="beforeend:#chat_room">
     if self {
-    <div class="border border-gray-300 rounded-lg text-right text-black mt-auto">
+    <div class="border border-gray-300 rounded-lg text-right text-black">
         <p class="font-semibold px-1">{ author }</p>
         <p class="inline-block px-1">{ msg }</p>
     </div>
